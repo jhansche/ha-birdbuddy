@@ -1,0 +1,6 @@
+{
+  "name": "Bird Buddy",
+  "render_readme": true,
+  "country": "US",
+  "homeassistant": "2022.11.0"
+}
