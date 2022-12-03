@@ -1,0 +1,22 @@
+{
+  "domain": "birdbuddy",
+  "name": "Bird Buddy",
+  "config_flow": true,
+  "documentation": "https://www.home-assistant.io/integrations/birdbuddy",
+  "requirements": [
+    "python-graphql-client==0.4.3",
+    "git+https://github.com/jhansche/pybirdbuddy.git@main#birdbuddy==1.0.0"
+  ],
+  "ssdp": [],
+  "zeroconf": [],
+  "homekit": {},
+  "dependencies": [],
+  "codeowners": [
+    "@jhansche"
+  ],
+  "iot_class": "cloud_polling",
+  "loggers": [
+    "birdbuddy",
+    "pybirdbuddy"
+  ]
+}
