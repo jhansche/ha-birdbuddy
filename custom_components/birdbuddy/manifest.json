@@ -3,7 +3,8 @@
   "name": "Bird Buddy",
   "version": "0.0.1",
   "config_flow": true,
-  "documentation": "https://www.home-assistant.io/integrations/birdbuddy",
+  "documentation": "https://github.com/jhansche/ha-birdbuddy/blob/main/README.md",
+  "issue_tracker": "https://github.com/jhansche/ha-birdbuddy/issues",
   "requirements": [
     "python-graphql-client==0.4.3",
     "git+https://github.com/jhansche/pybirdbuddy.git@main#birdbuddy==1.0.0"
