@@ -11,7 +11,7 @@ from .coordinator import BirdBuddyDataUpdateCoordinator
 from .entity import BirdBuddyMixin
 from .device import BirdBuddyDevice
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE
+from homeassistant.const import PERCENTAGE, SIGNAL_STRENGTH_DECIBELS_MILLIWATT
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -28,6 +28,7 @@ async def async_setup_entry(
     coordinator = hass.data[DOMAIN][entry.entry_id]
     feeders = coordinator.feeders.values()
     async_add_entities(BirdBuddyBatteryEntity(f, coordinator) for f in feeders)
+    async_add_entities(BirdBuddySignalEntity(f, coordinator) for f in feeders)
 
 
 class BirdBuddyBatteryEntity(BirdBuddyMixin, SensorEntity):
@@ -51,8 +52,36 @@ class BirdBuddyBatteryEntity(BirdBuddyMixin, SensorEntity):
     @property
     def native_value(self) -> int:
         """Return the state of the sensor."""
-        return self.feeder.battery_percentage
+        return self.feeder.battery.percentage
 
     @property
     def extra_state_attributes(self) -> Mapping[str, Any]:
-        return {"level": self.feeder["battery"].get("state")}
+        return {"level": self.feeder.battery.state}
+
+
+class BirdBuddySignalEntity(BirdBuddyMixin, SensorEntity):
+    """Bird Buddy wifi signal strength."""
+
+    _attr_device_class = SensorDeviceClass.SIGNAL_STRENGTH
+    _attr_state_class = SensorStateClass.MEASUREMENT
+    _attr_native_unit_of_measurement = SIGNAL_STRENGTH_DECIBELS_MILLIWATT
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_name = "Bird Buddy Signal Strength"
+
+    def __init__(
+        self,
+        feeder: BirdBuddyDevice,
+        coordinator: BirdBuddyDataUpdateCoordinator,
+    ) -> None:
+        super().__init__(feeder, coordinator)
+        self._attr_name = f"{self.feeder.name} Signal"
+        self._attr_unique_id = f"{self.feeder.id}-signal"
+
+    @property
+    def native_value(self) -> int:
+        """Return the state of the sensor."""
+        return self.feeder.signal.rssi
+
+    @property
+    def extra_state_attributes(self) -> Mapping[str, Any]:
+        return {"level": self.feeder.signal.state}

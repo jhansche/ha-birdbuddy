@@ -4,10 +4,10 @@ from __future__ import annotations
 from birdbuddy.client import BirdBuddy
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform
+from homeassistant.const import Platform, CONF_EMAIL, CONF_PASSWORD
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN
+from .const import DOMAIN, LOGGER
 from .coordinator import BirdBuddyDataUpdateCoordinator
 from .sensor import BirdBuddyBatteryEntity
 
@@ -19,9 +19,8 @@ async def async_setup_entry(
     entry: ConfigEntry,
 ) -> bool:
     """Set up Bird Buddy from a config entry."""
-
     hass.data.setdefault(DOMAIN, {})
-    client = BirdBuddy(entry.data["email"], entry.data["password"])
+    client = BirdBuddy(entry.data[CONF_EMAIL], entry.data[CONF_PASSWORD])
     coordinator = BirdBuddyDataUpdateCoordinator(hass, client, entry)
 
     hass.data[DOMAIN][entry.entry_id] = coordinator

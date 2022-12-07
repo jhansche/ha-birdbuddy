@@ -39,8 +39,14 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
     async def _async_update_data(self) -> BirdBuddy:
         try:
             if await self.client.refresh():
-                for d in map(BirdBuddyDevice, self.client.feeders):
-                    self.feeders.setdefault(d.id, d).update(d)
+                feeders = {
+                    id: BirdBuddyDevice(f) for (id, f) in self.client.feeders.items()
+                }
+                for (i, f) in feeders.items():
+                    if i in self.feeders:
+                        self.feeders[i].update(f)
+                    else:
+                        self.feeders[i] = f
         except Exception as exc:
             raise UpdateFailed from exc
         return self.client

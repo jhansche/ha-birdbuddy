@@ -1,13 +1,13 @@
 {
   "domain": "birdbuddy",
   "name": "Bird Buddy",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "config_flow": true,
   "documentation": "https://github.com/jhansche/ha-birdbuddy/blob/main/README.md",
   "issue_tracker": "https://github.com/jhansche/ha-birdbuddy/issues",
   "requirements": [
     "python-graphql-client==0.4.3",
-    "pybirdbuddy==0.0.1"
+    "pybirdbuddy @ git+https://github.com/jhansche/pybirdbuddy.git@main#pybirdbuddy==0.0.2"
   ],
   "ssdp": [],
   "zeroconf": [],
