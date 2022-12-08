@@ -86,3 +86,25 @@ class BirdBuddySignalEntity(BirdBuddyMixin, SensorEntity):
     @property
     def extra_state_attributes(self) -> Mapping[str, Any]:
         return {"level": self.feeder.signal.state}
+
+
+class BirdBuddyStateEntity(BirdBuddyMixin, SensorEntity):
+    """Bird Buddy Feeder state."""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
+    _attr_name = "Bird Buddy Feeder State"
+
+    def __init__(
+        self,
+        feeder: BirdBuddyDevice,
+        coordinator: BirdBuddyDataUpdateCoordinator,
+    ) -> None:
+        super().__init__(feeder, coordinator)
+        self._attr_name = f"{self.feeder.name} State"
+        self._attr_unique_id = f"{self.feeder.id}-state"
+
+    @property
+    def native_value(self) -> int:
+        """Return the state of the sensor."""
+        return self.feeder.state
