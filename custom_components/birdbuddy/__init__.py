@@ -7,11 +7,13 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform, CONF_EMAIL, CONF_PASSWORD
 from homeassistant.core import HomeAssistant
 
-from .const import DOMAIN, LOGGER
+from .const import DOMAIN
 from .coordinator import BirdBuddyDataUpdateCoordinator
-from .sensor import BirdBuddyBatteryEntity
 
-PLATFORMS: list[Platform] = [Platform.SENSOR]
+PLATFORMS: list[Platform] = [
+    Platform.SENSOR,
+    Platform.BINARY_SENSOR,
+]
 
 
 async def async_setup_entry(

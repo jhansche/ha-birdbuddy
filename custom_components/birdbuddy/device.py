@@ -1,14 +1,11 @@
 """Bird Buddy device"""
 from homeassistant.helpers.entity import DeviceInfo
-from .const import DOMAIN, MANUFACTURER
 from birdbuddy.feeder import Feeder
+from .const import DOMAIN, MANUFACTURER
 
 
 class BirdBuddyDevice(Feeder):
     """Represents one Bird Buddy device"""
-
-    def __init__(self, feeder: Feeder) -> None:
-        super().__init__(feeder)
 
     @property
     def device_info(self) -> DeviceInfo:

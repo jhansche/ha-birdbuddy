@@ -24,7 +24,7 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up Sonos from a config entry."""
+    """Set up entities from a config entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
     feeders = coordinator.feeders.values()
     async_add_entities(BirdBuddyBatteryEntity(f, coordinator) for f in feeders)
@@ -66,6 +66,7 @@ class BirdBuddySignalEntity(BirdBuddyMixin, SensorEntity):
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = SIGNAL_STRENGTH_DECIBELS_MILLIWATT
     _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
     _attr_name = "Bird Buddy Signal Strength"
 
     def __init__(

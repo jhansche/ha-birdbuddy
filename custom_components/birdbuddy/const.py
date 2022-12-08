@@ -6,4 +6,7 @@ from datetime import timedelta
 DOMAIN = "birdbuddy"
 LOGGER = logging.getLogger(__package__)
 MANUFACTURER = "Bird Buddy, Inc."
-POLLING_INTERVAL = timedelta(minutes=15)
+
+# Default polling interval.
+# For best performance, this should be less than the access token expiration
+POLLING_INTERVAL = timedelta(minutes=10)

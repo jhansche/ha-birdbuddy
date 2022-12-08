@@ -42,6 +42,9 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
         except Exception as exc:
             raise UpdateFailed(exc) from exc
 
+        if not self.client.feeders:
+            raise UpdateFailed("No Feeders found")
+
         feeders = {id: BirdBuddyDevice(f) for (id, f) in self.client.feeders.items()}
         # pylint: disable=invalid-name
         for (i, f) in feeders.items():
