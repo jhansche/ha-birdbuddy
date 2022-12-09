@@ -29,6 +29,7 @@ async def async_setup_entry(
     feeders = coordinator.feeders.values()
     async_add_entities(BirdBuddyBatteryEntity(f, coordinator) for f in feeders)
     async_add_entities(BirdBuddySignalEntity(f, coordinator) for f in feeders)
+    async_add_entities(BirdBuddyStateEntity(f, coordinator) for f in feeders)
 
 
 class BirdBuddyBatteryEntity(BirdBuddyMixin, SensorEntity):

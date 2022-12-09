@@ -1,7 +1,7 @@
 {
   "domain": "birdbuddy",
   "name": "Bird Buddy",
-  "version": "0.0.2",
+  "version": "0.0.3",
   "config_flow": true,
   "documentation": "https://github.com/jhansche/ha-birdbuddy/blob/main/README.md",
   "issue_tracker": "https://github.com/jhansche/ha-birdbuddy/issues",
