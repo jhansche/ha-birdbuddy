@@ -17,5 +17,20 @@
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
     }
+  },
+  "entity": {
+    "sensor": {
+      "feeder_state": {
+        "state": {
+          "OFFLINE": "Offline",
+          "OFF_GRID": "Off-grid",
+          "ONLINE": "Online",
+          "OUT_OF_FEEDER": "Out of feeder",
+          "READY_TO_STREAM": "Ready",
+          "STREAMING": "Streaming",
+          "TAKING_POSTCARDS": "Taking postcards"
+        }
+      }
+    }
   }
 }

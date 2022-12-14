@@ -95,6 +95,7 @@ class BirdBuddyStateEntity(BirdBuddyMixin, SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_entity_registry_enabled_default = False
     _attr_name = "Bird Buddy Feeder State"
+    _attr_translation_key = "feeder_state"
 
     def __init__(
         self,
@@ -108,4 +109,4 @@ class BirdBuddyStateEntity(BirdBuddyMixin, SensorEntity):
     @property
     def native_value(self) -> int:
         """Return the state of the sensor."""
-        return self.feeder.state
+        return self.feeder.state.value
