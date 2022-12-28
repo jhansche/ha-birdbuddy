@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 
 from birdbuddy.client import BirdBuddy
+from birdbuddy.feed import FeedNode, FeedNodeType
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, EventOrigin
@@ -44,7 +45,7 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
             update_interval=POLLING_INTERVAL,
         )
 
-    async def _process_feed(self, feed: dict) -> bool:
+    async def _process_feed(self, feed: list[FeedNode]) -> bool:
         """Attempt to process new feed items.
 
         There are some options for how we can process these:
@@ -53,14 +54,15 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
         - For all new postcards, we can simply emit a HA event, and leave it up to
           the user's automations to finish them, however (and if) the user wants.
         """
+        LOGGER.debug("Found feed items %s", feed)
         postcards = [
-            edge["node"]
-            for edge in feed["edges"]
-            if edge["node"]["__typename"] == "FeedItemNewPostcard"
+            node for node in feed if node.node_type == FeedNodeType.NewPostcard
         ]
+
+        LOGGER.debug("Found postcards %s", postcards)
         for postcard in postcards:
             LOGGER.debug("A new postcard is ready to process: %s", postcard)
-            if not self.hass.bus.listeners.get(EVENT_NEW_POSTCARD_SIGHTING):
+            if not self.hass.bus.async_listeners().get(EVENT_NEW_POSTCARD_SIGHTING):
                 # if no one is listening, no sense in getting sighting data
                 continue
 
@@ -76,10 +78,10 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
             # If this is a viable option, we can supply a Recipe in docs to show how this could
             # be done. Similarly, we can supply some default blueprints to handle this with
             # user input.
-            sighting = self.client.sighting_from_postcard(postcard_id=postcard["id"])
+            sighting = await self.client.sighting_from_postcard(postcard=postcard)
             data = {
-                "postcard": postcard,
-                "sighting": sighting,
+                "postcard": postcard.data,
+                "sighting": sighting.data,
             }
             self.hass.bus.fire(
                 event_type=EVENT_NEW_POSTCARD_SIGHTING,
@@ -90,6 +92,8 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
     async def _async_update_data(self) -> BirdBuddy:
         try:
             await self.client.refresh()
+            # refresh_feed() will return only items that are newer than the last seen timestamp
+            # if we haven't seen a timestamp, it will return all items.
             feed = await self.client.refresh_feed()
             # Check for any new postcards that we can handle, and handle them:
             await self._process_feed(feed)
