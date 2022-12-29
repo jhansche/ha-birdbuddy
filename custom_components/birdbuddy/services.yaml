@@ -1,0 +1,36 @@
+collect_postcard:
+  name: Collect a Postcard
+  description: Finish a Postcard by adding it to your Bird Buddy Collections.
+  # target:
+  #   device:
+  #     # Technically we don't care about Feeder, just account...
+  #     integration: birdbuddy
+  fields:
+    postcard:
+      name: Postcard data
+      description: Data from the FeedNode representing the postcard.
+        This corresponds to the `.postcard` data received in the Event.
+      required: true
+      fields:
+        id:
+          name: The postcard (feed item) id
+          required: true
+    sighting:
+      name: Sighting data
+      description: Data from the PostcardSighting object after converting the postcard to a sighting.
+        This corresponds to the `.sighting` data received in the Event.
+      required: true
+      fields:
+        feeder:
+          required: true
+        sightingReport:
+          name: SightingReport data
+          required: true
+          fields:
+            sightings:
+              name: List of sightings in this report
+              required: true
+              fields:
+                species:
+                  required: true
+
