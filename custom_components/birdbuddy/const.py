@@ -1,6 +1,7 @@
 """Constants for the Bird Buddy integration."""
 
 from datetime import timedelta
+from homeassistant.const import CONF_DEVICE_ID
 from homeassistant.helpers import config_validation as cv
 import logging
 import voluptuous as vol
@@ -19,7 +20,7 @@ SERVICE_SCHEMA_COLLECT_POSTCARD = vol.Schema(
     {
         vol.Required("postcard"): cv.has_at_least_one_key("id"),
         vol.Required("sighting"): cv.has_at_least_one_key("sightingReport"),
-        vol.Optional("device_id"): cv.string,  # better?
+        vol.Optional(CONF_DEVICE_ID): cv.string,  # better?
         vol.Optional("strategy"): cv.string,
         # ...?
     }

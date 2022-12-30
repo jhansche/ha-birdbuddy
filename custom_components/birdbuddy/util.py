@@ -1,6 +1,13 @@
 """Bird Buddy utilities"""
 
+from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
+from homeassistant.helpers import (
+    config_validation as cv,
+    device_registry as dr,
+)
+
+from homeassistant.helpers.typing import ConfigType
 
 from .const import DOMAIN
 from .coordinator import BirdBuddyDataUpdateCoordinator
@@ -15,3 +22,31 @@ def _find_coordinator_by_feeder(
         hass.data[DOMAIN].values()
     )
     return next((c for c in coordinators if feeder_id in c.feeders), None)
+
+
+def _find_coordinator_by_device(
+    hass: HomeAssistant,
+    device_id: str,
+) -> BirdBuddyDataUpdateCoordinator:
+    """Find the first coordinator for this `device_id`."""
+    dev_reg = dr.async_get(hass)
+    if not (device_entry := dev_reg.async_get(device_id)):
+        raise ValueError(f"Device ID {device_id} not found")
+
+    config_entry_ids = device_entry.config_entries
+    entry = next(
+        (
+            entry
+            for entry in hass.config_entries.async_entries(DOMAIN)
+            if entry.entry_id in config_entry_ids
+        )
+    )
+
+    if entry and entry.state != ConfigEntryState.LOADED:
+        raise ValueError(f"Device {device_id} config entry is not loaded")
+    if entry is None or entry.entry_id not in hass.data[DOMAIN]:
+        raise ValueError(
+            f"Device {device_id} is not from an existing zwave_js config entry"
+        )
+    coordinator: BirdBuddyDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
+    return coordinator

@@ -19,6 +19,11 @@
         },
         "title": "Bird Buddy"
     },
+    "device_automation": {
+        "trigger_type": {
+            "new_postcard": "A new postcard is ready"
+        }
+    },
     "entity": {
         "sensor": {
             "feeder_state": {

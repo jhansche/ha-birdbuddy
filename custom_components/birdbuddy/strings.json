@@ -35,5 +35,10 @@
         }
       }
     }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "new_postcard": "A new postcard is ready"
+    }
   }
 }
