@@ -14,7 +14,13 @@ settings and firmware version).
 
 ## Installation
 
-<!-- TODO: add to HACS -->
+### With HACS
+
+1. Open HACS Settings and add this repository (https://github.com/jhansche/ha-birdbuddy/)
+   as a Custom Repository (use **Integration** as the category).
+2. The `Bird Buddy` page should automatically load (or find it in the HACS Store)
+3. Click `Install`
+4. Continue to [Setup](README.md#Setup)
 
 ### Manual
 
@@ -38,8 +44,21 @@ A device is created for each Bird Buddy feeder associated with the account. See 
 
 # Entities
 
-| Entity    | Entity Type | Notes                                 |
-|-----------|-------------|---------------------------------------|
-| `Battery` | `Sensor`    | Current Bird Buddy battery percentage |
+| Entity     | Entity Type     | Notes                                        |
+|------------|-----------------|----------------------------------------------|
+| `Battery`  | `sensor`        | Current Bird Buddy battery percentage        |
+| `Charging` | `binary_sensor` | Whether the Bird Buddy is currently charging |
+| `State`    | `sensor`        | Current state (ready, offline, etc)          |
+| `Signal`   | `sensor`        | Current wifi signal (RSSI)                   |
 
 More entities may be added in the future.
+
+# Media
+
+Bird species and sightings that have _already been collected_ from postcards can be viewed in the
+Home Assistant Media Browser. To collect a postcard you will need to use the mobile app to open the
+postcards as they arrive. Only opened postcards can be viewed in the Media Browser (same as the
+Collections tab in the Bird Buddy app).
+
+<!-- # Services -->
+<!-- # Events -->
