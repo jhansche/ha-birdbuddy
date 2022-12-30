@@ -95,7 +95,7 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
             await self.client.refresh()
             # refresh_feed() will return only items that are newer than the last seen timestamp
             # if we haven't seen a timestamp, it will return all items.
-            feed = await self.client.refresh_feed(since="2022-12-06T00:00:00.000Z")
+            feed = await self.client.refresh_feed()
             # Check for any new postcards that we can handle, and handle them:
             await self._process_feed(feed)
         except Exception as exc:
