@@ -22,6 +22,7 @@ SERVICE_SCHEMA_COLLECT_POSTCARD = vol.Schema(
         vol.Required("sighting"): cv.has_at_least_one_key("sightingReport"),
         vol.Optional(CONF_DEVICE_ID): cv.string,  # better?
         vol.Optional("strategy"): cv.string,
+        vol.Optional("best_guess_confidence"): vol.Coerce(int),
         # ...?
     }
 )

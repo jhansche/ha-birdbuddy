@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from birdbuddy.birds import PostcardSighting
+from birdbuddy.birds import PostcardSighting, SightingFinishStrategy
 from birdbuddy.client import BirdBuddy
 from birdbuddy.feed import FeedNode, FeedNodeType
 
@@ -117,13 +117,17 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
         """Handles the `birdbuddy.collect_postcard` service call."""
         sighting = PostcardSighting(data["sighting"])
         postcard_id = data["postcard"]["id"]
+        strategy = SightingFinishStrategy(data.get("strategy", "recognized"))
         LOGGER.debug(
-            "Calling collect_postcard: id=%s, sighting=%s", postcard_id, sighting
+            "Calling collect_postcard: id=%s, sighting=%s, strategy=%s",
+            postcard_id,
+            sighting,
+            strategy,
         )
         success = await self.client.finish_postcard(
             postcard_id,
             sighting,
-            # options: strategy, threshold, etc
+            strategy,
         )
         if success:
             LOGGER.info("Postcard collected to Media")
