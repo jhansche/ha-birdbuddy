@@ -11,6 +11,7 @@ from homeassistant.helpers.typing import ConfigType
 
 from .const import DOMAIN, LOGGER, SERVICE_SCHEMA_COLLECT_POSTCARD
 from .coordinator import BirdBuddyDataUpdateCoordinator
+from .util import _find_coordinator_by_feeder
 
 PLATFORMS: list[Platform] = [
     Platform.SENSOR,
@@ -63,13 +64,13 @@ def setup_services(hass: HomeAssistant) -> bool:
     """Register the BirdBuddy service(s)"""
 
     async def handle_collect_postcard(service: ServiceCall) -> None:
-        sighting = PostcardSighting(service.data["sighting"])
-        postcard_id = service.data["postcard"]["id"]
-        LOGGER.warning("JHH: service called: %s", service.data)
-        LOGGER.warning("JHH: service: id=%s, sighting=%s", postcard_id, sighting)
-        # Now we can finish the postcard
+        feeder_id = service.data["sighting"]["feeder"]["id"]
+        coordinator = _find_coordinator_by_feeder(hass, feeder_id)
+        if not coordinator:
+            raise ValueError(f"Feeder with id '{feeder_id}' not found.")
 
-    LOGGER.info("JHH: registering services")
+        await coordinator.handle_collect_postcard(service.data)
+
     hass.services.async_register(
         DOMAIN,
         "collect_postcard",

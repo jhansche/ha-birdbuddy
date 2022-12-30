@@ -17,9 +17,10 @@ EVENT_NEW_POSTCARD_SIGHTING = f"{DOMAIN}_new_postcard_sighting"
 
 SERVICE_SCHEMA_COLLECT_POSTCARD = vol.Schema(
     {
-        vol.Optional("device_id"): cv.string,  # better?
         vol.Required("postcard"): cv.has_at_least_one_key("id"),
         vol.Required("sighting"): cv.has_at_least_one_key("sightingReport"),
+        vol.Optional("device_id"): cv.string,  # better?
+        vol.Optional("strategy"): cv.string,
         # ...?
     }
 )

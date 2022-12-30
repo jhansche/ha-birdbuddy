@@ -1,7 +1,8 @@
-"""Data Update coordinator for ZAMG weather data."""
-from __future__ import annotations
-from datetime import datetime
+"""Data Update coordinator for Bird Buddy."""
 
+from __future__ import annotations
+
+from birdbuddy.birds import PostcardSighting
 from birdbuddy.client import BirdBuddy
 from birdbuddy.feed import FeedNode, FeedNodeType
 
@@ -27,8 +28,6 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
     config_entry: ConfigEntry
     client: BirdBuddy
     feeders: dict[str, BirdBuddyDevice]
-
-    _last_feed_item: datetime | None
 
     def __init__(
         self,
@@ -64,6 +63,7 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
             LOGGER.debug("A new postcard is ready to process: %s", postcard)
             if not self.hass.bus.async_listeners().get(EVENT_NEW_POSTCARD_SIGHTING):
                 # if no one is listening, no sense in getting sighting data
+                LOGGER.debug("No event listeners: skipping postcard conversion")
                 continue
 
             # emit a new event with sighting data and postcard data
@@ -95,7 +95,7 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
             await self.client.refresh()
             # refresh_feed() will return only items that are newer than the last seen timestamp
             # if we haven't seen a timestamp, it will return all items.
-            feed = await self.client.refresh_feed()
+            feed = await self.client.refresh_feed(since="2022-12-06T00:00:00.000Z")
             # Check for any new postcards that we can handle, and handle them:
             await self._process_feed(feed)
         except Exception as exc:
@@ -112,3 +112,22 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
             else:
                 self.feeders[i] = f
         return self.client
+
+    async def handle_collect_postcard(self, data: dict[str, any]) -> bool:
+        """Handles the `birdbuddy.collect_postcard` service call."""
+        sighting = PostcardSighting(data["sighting"])
+        postcard_id = data["postcard"]["id"]
+        LOGGER.debug(
+            "Calling collect_postcard: id=%s, sighting=%s", postcard_id, sighting
+        )
+        success = await self.client.finish_postcard(
+            postcard_id,
+            sighting,
+            # options: strategy, threshold, etc
+        )
+        if success:
+            LOGGER.info("Postcard collected to Media")
+        else:
+            # TODO: more info
+            LOGGER.warning("Postcard could not be collected")
+        return success
