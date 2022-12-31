@@ -1,0 +1,67 @@
+collect_postcard:
+  name: Collect a Postcard
+  description: Finish a Postcard by adding it to your Bird Buddy Collections.
+  # target:
+  #   device:
+  #     # Technically we don't care about Feeder, just account...
+  #     # But associating a device lets us look up the coordinator and client
+  #     integration: birdbuddy
+  fields:
+    strategy:
+      name: Strategy for collecting the postcard
+      description: "Strategy can be one of
+        * `recognized` - Collect the postcard only if it was a recognized bird. Unrecognized birds will
+          be ignored.
+        * `best_guess` - Collect `recognized` birds, as well as choosing the highest-confidence species
+          that Bird Buddy suggested. Optionally set the confidence threshold (defaults to 10).
+        * `mystery` - Collect as `best_guess`, and anything remaining will be finished as a \"Mystery
+          Visitor\".
+        "
+      required: false
+      default: "recognized"
+      selector:
+        select:
+          options:
+            - "recognized"
+            - "best_guess"
+            - "mystery"
+    best_guess_confidence:
+      name: Best-guess confidence threshold
+      description: Confidence threshold for auto-accepting Bird Buddy's recommendations.
+      default: 10
+      selector:
+        number:
+          min: 0
+          max: 100
+          step: 1
+          unit_of_measurement: "%"
+    postcard:
+      name: Postcard data
+      description: Data from the FeedNode representing the postcard.
+        This corresponds to the `.postcard` data received in the Event.
+      required: true
+      fields:
+        id:
+          name: The postcard (feed item) id
+          required: true
+    sighting:
+      name: Sighting data
+      description: Data from the PostcardSighting object after converting the postcard to a sighting.
+        This corresponds to the `.sighting` data received in the Event. This should generally just be
+        passed through from an automation.
+      required: true
+      fields:
+        feeder:
+          # TODO: not really required, but it is used in the string representation of the Sighting object.
+          required: true
+        sightingReport:
+          name: SightingReport data
+          required: true
+          fields:
+            sightings:
+              name: List of sightings in this report
+              required: true
+              fields:
+                species:
+                  required: false
+

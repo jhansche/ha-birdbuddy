@@ -1,5 +1,6 @@
 {
   "config": {
+    "title": "Bird Buddy",
     "step": {
       "user": {
         "title": "Fill in your Bird Buddy login credentials",
@@ -22,6 +23,8 @@
     "sensor": {
       "feeder_state": {
         "state": {
+          "DEEP_SLEEP": "Sleeping",
+          "FIRMWARE_UPDATE": "Updating firmware",
           "OFFLINE": "Offline",
           "OFF_GRID": "Off-grid",
           "ONLINE": "Online",
@@ -31,6 +34,11 @@
           "TAKING_POSTCARDS": "Taking postcards"
         }
       }
+    }
+  },
+  "device_automation": {
+    "trigger_type": {
+      "new_postcard": "A new postcard is ready"
     }
   }
 }

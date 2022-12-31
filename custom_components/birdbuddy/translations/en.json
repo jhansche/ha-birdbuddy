@@ -1,0 +1,44 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Device is already configured"
+        },
+        "error": {
+            "cannot_connect": "Failed to connect",
+            "invalid_auth": "Invalid authentication",
+            "unknown": "Unexpected error"
+        },
+        "step": {
+            "user": {
+                "data": {
+                    "email": "Email",
+                    "password": "Password"
+                },
+                "title": "Fill in your Bird Buddy login credentials"
+            }
+        },
+        "title": "Bird Buddy"
+    },
+    "device_automation": {
+        "trigger_type": {
+            "new_postcard": "A new postcard is ready"
+        }
+    },
+    "entity": {
+        "sensor": {
+            "feeder_state": {
+                "state": {
+                    "DEEP_SLEEP": "Sleeping",
+                    "FIRMWARE_UPDATE": "Updating firmware",
+                    "OFFLINE": "Offline",
+                    "OFF_GRID": "Off-grid",
+                    "ONLINE": "Online",
+                    "OUT_OF_FEEDER": "Out of feeder",
+                    "READY_TO_STREAM": "Ready",
+                    "STREAMING": "Streaming",
+                    "TAKING_POSTCARDS": "Taking postcards"
+                }
+            }
+        }
+    }
+}
