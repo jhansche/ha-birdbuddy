@@ -16,6 +16,8 @@ settings and firmware version).
 
 ### With HACS
 
+[![hacs_badge](https://img.shields.io/badge/HACS-Custom-41BDF5.svg)](https://github.com/hacs/integration)
+
 1. Open HACS Settings and add this repository (https://github.com/jhansche/ha-birdbuddy/)
    as a Custom Repository (use **Integration** as the category).
 2. The `Bird Buddy` page should automatically load (or find it in the HACS Store)
