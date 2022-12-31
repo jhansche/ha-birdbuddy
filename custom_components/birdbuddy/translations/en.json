@@ -16,8 +16,7 @@
                 },
                 "title": "Fill in your Bird Buddy login credentials"
             }
-        },
-        "title": "Bird Buddy"
+        }
     },
     "device_automation": {
         "trigger_type": {

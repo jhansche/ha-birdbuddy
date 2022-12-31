@@ -1,6 +1,5 @@
 {
   "config": {
-    "title": "Bird Buddy",
     "step": {
       "user": {
         "title": "Fill in your Bird Buddy login credentials",
