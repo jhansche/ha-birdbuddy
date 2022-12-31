@@ -60,5 +60,75 @@ Home Assistant Media Browser. To collect a postcard you will need to use the mob
 postcards as they arrive. Only opened postcards can be viewed in the Media Browser (same as the
 Collections tab in the Bird Buddy app).
 
-<!-- # Services -->
-<!-- # Events -->
+# Events
+
+### `birdbuddy_new_postcard_sighting`
+
+This event is fired when a new postcard is detected in the feed.
+
+| Field      | Description                                                                                                          |
+|------------|----------------------------------------------------------------------------------------------------------------------|
+| `postcard` | The `FeedNode` data for the `FeedItemNewPostcard` type.                                                              |
+| `sighting` | The `PostcardSighting` data, containing information about the sighting, potential species info, and images captured. |
+
+Some interesting fields from `sighting` include:
+
+* `sighting.medias[].contentUrl`, `.thumbnailUrl` - time-sensitive URLs that can be used to download the associated sighting image(s)
+* `sighting.sightingReport.sightings[]` - list of sightings grouped together in the postcard
+    * The data here depends on the type of sighting (i.e., `SightingRecognizedBird`, `SightingCantDecideWhichBird`, etc)
+    * Possible fields include `.suggestions` if the bird is not recognized, or `.species` for confidently recognized birds
+* `sighting.feeder.id` - not generally useful as is, but can be used to filter automations to those matching the specified Feeder.
+  This filter is applied automatically with the Device Trigger.
+
+This event data can also be passed through as-is to the [`birdbuddy.collect_postcard`](#birdbuddycollect_postcard) service.
+
+This event can also be added in an automation using the "A new postcard is ready" Device Trigger:
+```yaml
+trigger:
+  - platform: device
+    domain: birdbuddy
+    type: new_postcard
+    device_id: <ha device id>
+    feeder_id: <bird buddy feeder id>
+```
+
+# Services
+
+### `birdbuddy.collect_postcard`
+
+"Finishes" a postcard sighting by adding the media to the associated species collections, thus making them available in the [Media Browser](#media).
+
+| Service attribute data  | Optional | Description                                                                                |
+|-------------------------|----------|--------------------------------------------------------------------------------------------|
+| `postcard`              | No       | Postcard data from `birdbuddy_new_postcard_sighting` event                                 |
+| `sighting`              | No       | Sighting data from `birdbuddy_new_postcard_sighting` event                                 |
+| `strategy`              | Yes      | Strategy for resolving the sighting. One of `"recognized"`, `"best_guess"`, or `"mystery"` |
+| `best_guess_confidence` | Yes      | Minimum confidence to support `"best_guess"` strategy                                      |
+
+Postcard sighting strategies:
+
+* `recognized` (Default): collect the postcard only if Bird Buddy's AI identified a bird species. Note: the identified species may be incorrect.
+* `best_guess`: In the "can't decide which bird" sightings, a list of possible species is usually included. This strategy will select the
+  highest-confidence species automatically (assuming that confidence is at least `best_guess_confidence`, defaults to 10%).
+<!-- * `mystery`: If the bird is not recognized and no species meets the confidence threshold, collect the sighting as a "Mystery Visitor".
+  NOTE: Mystery Visitor is not yet implemented. -->
+
+#### Automation example
+
+```yaml
+trigger:
+  - platform: event
+    event_type: birdbuddy_new_postcard_sighting
+  # or device trigger:
+  - platform: device
+    domain: birdbuddy
+    type: new_postcard
+    # $ids...
+action:
+  - service: birdbuddy.collect_postcard
+    data_template:
+      strategy: best_guess
+      # pass-through these 2 event fields as they are
+      postcard: "{{ trigger.event.data.postcard }}"
+      sighting: "{{ trigger.event.data.sighting }}"
+```
