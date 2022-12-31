@@ -24,6 +24,10 @@ settings and firmware version).
 3. Click `Install`
 4. Continue to [Setup](README.md#Setup)
 
+Alternatively, click on the button below to add the repository:
+
+[![Open your Home Assistant instance and open a repository inside the Home Assistant Community Store.](https://my.home-assistant.io/badges/hacs_repository.svg)](https://my.home-assistant.io/redirect/hacs_repository/?category=Integration&repository=ha-birdbuddy&owner=jhansche)
+
 ### Manual
 
 Copy the `birdbuddy` directory from `custom_components` in this repository,
