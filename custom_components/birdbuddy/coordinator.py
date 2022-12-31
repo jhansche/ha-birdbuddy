@@ -80,7 +80,6 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
             # user input.
             sighting = await self.client.sighting_from_postcard(postcard=postcard)
             data = {
-                # "device_id": or some way to identify which account to use
                 "postcard": postcard.data,
                 "sighting": sighting.data,
             }

@@ -3,11 +3,8 @@
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import (
-    config_validation as cv,
     device_registry as dr,
 )
-
-from homeassistant.helpers.typing import ConfigType
 
 from .const import DOMAIN
 from .coordinator import BirdBuddyDataUpdateCoordinator
@@ -22,6 +19,17 @@ def _find_coordinator_by_feeder(
         hass.data[DOMAIN].values()
     )
     return next((c for c in coordinators if feeder_id in c.feeders), None)
+
+
+def _feeder_id_for_device(
+    hass: HomeAssistant,
+    device_id: str,
+) -> str:
+    """Return the Bird Buddy Feeder ID for this `device_id`."""
+    dev_reg = dr.async_get(hass)
+    if not (device_entry := dev_reg.async_get(device_id)):
+        raise ValueError(f"Device ID {device_id} not found")
+    return next((id for (d, id) in device_entry.identifiers if d == DOMAIN))
 
 
 def _find_coordinator_by_device(

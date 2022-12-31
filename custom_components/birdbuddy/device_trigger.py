@@ -17,17 +17,27 @@ from homeassistant.const import (
     CONF_TYPE,
 )
 from homeassistant.core import CALLBACK_TYPE, HomeAssistant
+from homeassistant.helpers import config_validation as cv
 from homeassistant.helpers.trigger import TriggerActionType, TriggerInfo
 from homeassistant.helpers.typing import ConfigType
 
-from . import DOMAIN, LOGGER
-from .util import _find_coordinator_by_device
+from . import DOMAIN
+from .const import (
+    CONF_FEEDER_ID,
+    EVENT_NEW_POSTCARD_SIGHTING,
+    TRIGGER_TYPE_POSTCARD,
+)
+from .util import (
+    _find_coordinator_by_device,
+    _feeder_id_for_device,
+)
 
-TRIGGER_TYPES = {"new_postcard"}
+TRIGGER_TYPES = {TRIGGER_TYPE_POSTCARD}
 
 TRIGGER_SCHEMA = DEVICE_TRIGGER_BASE_SCHEMA.extend(
     {
         vol.Required(CONF_TYPE): vol.In(TRIGGER_TYPES),
+        vol.Optional(CONF_FEEDER_ID): cv.string,
     }
 )
 
@@ -50,6 +60,7 @@ async def async_get_triggers(
     triggers = []
 
     # TODO: get entities, like BirdBuddyStateEntity to attach node state triggers
+    feeder_id = _feeder_id_for_device(hass, device_id)
 
     base_trigger = {
         CONF_PLATFORM: "device",
@@ -58,9 +69,13 @@ async def async_get_triggers(
     }
 
     # new postcard trigger
-    triggers.append({**base_trigger, CONF_TYPE: "new_postcard"})
-    LOGGER.warning("JHH: returning triggers: %s", triggers)
-
+    triggers.append(
+        {
+            **base_trigger,
+            CONF_TYPE: TRIGGER_TYPE_POSTCARD,
+            CONF_FEEDER_ID: feeder_id,
+        }
+    )
     return triggers
 
 
@@ -71,19 +86,18 @@ async def async_attach_trigger(
     trigger_info: TriggerInfo,
 ) -> CALLBACK_TYPE:
     """Attach a trigger."""
-    LOGGER.warning("JHH Attaching trigger: %s, %s, %s", config, action, trigger_info)
-    event_data = {
-        CONF_DEVICE_ID: config[CONF_DEVICE_ID],
-        CONF_TYPE: config[CONF_TYPE],
-    }
+    event_data = {}
+    if CONF_FEEDER_ID in config:
+        # Add feeder id to trigger event data
+        # The event will include .sighting.feeder.id, so that's what we will trigger on
+        event_data["sighting"] = {"feeder": {"id": config[CONF_FEEDER_ID]}}
     event_config = event_trigger.TRIGGER_SCHEMA(
         {
             event_trigger.CONF_PLATFORM: "event",
-            event_trigger.CONF_EVENT_TYPE: config[CONF_TYPE],
+            event_trigger.CONF_EVENT_TYPE: EVENT_NEW_POSTCARD_SIGHTING,
             event_trigger.CONF_EVENT_DATA: event_data,
         }
     )
-    LOGGER.warning("JHH transformed event config: %s", event_config)
     return await event_trigger.async_attach_trigger(
         hass, event_config, action, trigger_info, platform_type="device"
     )

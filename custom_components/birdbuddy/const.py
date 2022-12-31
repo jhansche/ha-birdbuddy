@@ -14,6 +14,8 @@ MANUFACTURER = "Bird Buddy, Inc."
 # For best performance, this should be less than the access token expiration
 POLLING_INTERVAL = timedelta(minutes=10)
 
+CONF_FEEDER_ID = "feeder_id"
+TRIGGER_TYPE_POSTCARD = "new_postcard"
 EVENT_NEW_POSTCARD_SIGHTING = f"{DOMAIN}_new_postcard_sighting"
 
 SERVICE_SCHEMA_COLLECT_POSTCARD = vol.Schema(

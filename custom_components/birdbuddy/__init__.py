@@ -1,7 +1,6 @@
 """The Bird Buddy integration."""
 from __future__ import annotations
 
-from birdbuddy.birds import PostcardSighting
 from birdbuddy.client import BirdBuddy
 
 from homeassistant.config_entries import ConfigEntry
