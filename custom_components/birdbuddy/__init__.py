@@ -66,9 +66,22 @@ def _setup_services(hass: HomeAssistant) -> bool:
 
     async def handle_collect_postcard(service: ServiceCall) -> None:
         feeder_id = service.data["sighting"]["feeder"]["id"]
+        coordinator: BirdBuddyDataUpdateCoordinator
         coordinator = _find_coordinator_by_feeder(hass, feeder_id)
         if not coordinator:
-            raise ValueError(f"Feeder with id '{feeder_id}' not found.")
+            # We could not find this specific feeder. This could mean that the Feeder has been
+            # factory reset and re-paired, but the Feed belongs to the same user. If we assume
+            # that, we can move on to find the next available Coordinator, even if it might not
+            # have the same feeder id anymore.
+            coordinator = next(iter(hass.data[DOMAIN].values()))
+            if coordinator:
+                LOGGER.warning(
+                    "Feeder with id '%s' not found: trying %s",
+                    feeder_id,
+                    list(coordinator.feeders.keys()),
+                )
+            else:
+                raise ValueError("Feeder with id '{feeder_id}' not found.")
 
         await coordinator.handle_collect_postcard(service.data)
 

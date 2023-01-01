@@ -37,6 +37,7 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
     ) -> None:
         self.client = client
         self.feeders = {}
+        self.first_update = True
         super().__init__(
             hass,
             LOGGER,
@@ -92,11 +93,16 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
     async def _async_update_data(self) -> BirdBuddy:
         try:
             await self.client.refresh()
-            # refresh_feed() will return only items that are newer than the last seen timestamp
-            # if we haven't seen a timestamp, it will return all items.
-            feed = await self.client.refresh_feed()
-            # Check for any new postcards that we can handle, and handle them:
-            await self._process_feed(feed)
+
+            # Skip processing the Feed on the first update. This works around a minor issue
+            # where the `automation` integration is not loaded yet by the time we make our first
+            # update call. If we proceed, we might emit the postcard feed items while there are
+            # no automations listening; and because refresh_feed() keeps track of the last seen
+            # feed item timestamp, that would prevent seeing that postcard again.
+            # This delays the first attempt at postcard handling until the next update interval.
+            if not self.first_update:
+                feed = await self.client.refresh_feed()
+                await self._process_feed(feed)
         except Exception as exc:
             raise UpdateFailed(exc) from exc
 
@@ -110,6 +116,7 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
                 self.feeders[i].update(f)
             else:
                 self.feeders[i] = f
+        self.first_update = False
         return self.client
 
     async def handle_collect_postcard(self, data: dict[str, any]) -> bool:
