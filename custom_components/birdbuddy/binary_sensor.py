@@ -32,7 +32,8 @@ class BirdBuddyChargingEntity(BirdBuddyMixin, BinarySensorEntity):
     _attr_device_class = BinarySensorDeviceClass.BATTERY_CHARGING
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_entity_registry_enabled_default = False
-    _attr_name = "Bird Buddy Charging"
+    _attr_name = "Charging"
+    _attr_has_entity_name = True
 
     def __init__(
         self,
@@ -40,7 +41,6 @@ class BirdBuddyChargingEntity(BirdBuddyMixin, BinarySensorEntity):
         coordinator: BirdBuddyDataUpdateCoordinator,
     ) -> None:
         super().__init__(feeder, coordinator)
-        self._attr_name = f"{self.feeder.name} Charging"
         self._attr_unique_id = f"{self.feeder.id}-charging"
 
     @property

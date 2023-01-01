@@ -39,7 +39,8 @@ class BirdBuddyBatteryEntity(BirdBuddyMixin, SensorEntity):
     _attr_state_class = SensorStateClass.MEASUREMENT
     _attr_native_unit_of_measurement = PERCENTAGE
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_name = "Bird Buddy Battery"
+    _attr_has_entity_name = True
+    _attr_name = "Battery"
 
     def __init__(
         self,
@@ -47,7 +48,6 @@ class BirdBuddyBatteryEntity(BirdBuddyMixin, SensorEntity):
         coordinator: BirdBuddyDataUpdateCoordinator,
     ) -> None:
         super().__init__(feeder, coordinator)
-        self._attr_name = f"{self.feeder.name} Battery"
         self._attr_unique_id = f"{self.feeder.id}-battery"
 
     @property
@@ -68,7 +68,8 @@ class BirdBuddySignalEntity(BirdBuddyMixin, SensorEntity):
     _attr_native_unit_of_measurement = SIGNAL_STRENGTH_DECIBELS_MILLIWATT
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_entity_registry_enabled_default = False
-    _attr_name = "Bird Buddy Signal Strength"
+    _attr_has_entity_name = True
+    _attr_name = "Signal Strength"
 
     def __init__(
         self,
@@ -76,7 +77,6 @@ class BirdBuddySignalEntity(BirdBuddyMixin, SensorEntity):
         coordinator: BirdBuddyDataUpdateCoordinator,
     ) -> None:
         super().__init__(feeder, coordinator)
-        self._attr_name = f"{self.feeder.name} Signal"
         self._attr_unique_id = f"{self.feeder.id}-signal"
 
     @property
@@ -94,7 +94,8 @@ class BirdBuddyStateEntity(BirdBuddyMixin, SensorEntity):
 
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_entity_registry_enabled_default = False
-    _attr_name = "Bird Buddy Feeder State"
+    _attr_has_entity_name = True
+    _attr_name = "Feeder State"
     _attr_translation_key = "feeder_state"
 
     def __init__(
@@ -103,7 +104,6 @@ class BirdBuddyStateEntity(BirdBuddyMixin, SensorEntity):
         coordinator: BirdBuddyDataUpdateCoordinator,
     ) -> None:
         super().__init__(feeder, coordinator)
-        self._attr_name = f"{self.feeder.name} State"
         self._attr_unique_id = f"{self.feeder.id}-state"
 
     @property

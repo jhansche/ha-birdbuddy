@@ -36,7 +36,8 @@ class BirdBuddyOffGridSwitch(BirdBuddyMixin, SwitchEntity):
     _attr_device_class = SwitchDeviceClass.SWITCH
     _attr_entity_category = EntityCategory.CONFIG
     _attr_entity_registry_enabled_default = False
-    _attr_name = "Bird Buddy Off-Grid"
+    _attr_name = "Off-Grid"
+    _attr_has_entity_name = True
     coordinator: BirdBuddyDataUpdateCoordinator
 
     def __init__(
@@ -45,7 +46,6 @@ class BirdBuddyOffGridSwitch(BirdBuddyMixin, SwitchEntity):
         coordinator: BirdBuddyDataUpdateCoordinator,
     ) -> None:
         super().__init__(feeder, coordinator)
-        self._attr_name = f"{self.feeder.name} Off-Grid"
         self._attr_unique_id = f"{self.feeder.id}-offgrid"
 
     @property

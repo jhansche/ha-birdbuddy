@@ -38,6 +38,8 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
 
     _attr_device_class = UpdateDeviceClass.FIRMWARE
     _attr_supported_features = UpdateEntityFeature.INSTALL
+    _attr_has_entity_name = True
+    _attr_name = "Firmware Update"
 
     __update_state = None
 
@@ -47,7 +49,6 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
         coordinator: BirdBuddyDataUpdateCoordinator,
     ) -> None:
         super().__init__(feeder, coordinator)
-        self._attr_name = f"{self.feeder.name} Update"
         self._attr_unique_id = f"{self.feeder.id}-updater"
 
     @property

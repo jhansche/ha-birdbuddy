@@ -16,7 +16,6 @@ class BirdBuddyDevice(Feeder):
             default_model="Bird Buddy",
             default_name="Bird Buddy",
             name=self.name,
-            # FIXME: firmware version only for owner account
             sw_version=self.get("firmwareVersion", None),
             suggested_area="Outside",
         )
