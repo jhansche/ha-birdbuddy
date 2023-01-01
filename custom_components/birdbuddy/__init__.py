@@ -13,15 +13,16 @@ from .coordinator import BirdBuddyDataUpdateCoordinator
 from .util import _find_coordinator_by_feeder
 
 PLATFORMS: list[Platform] = [
-    Platform.SENSOR,
     Platform.BINARY_SENSOR,
+    Platform.SENSOR,
+    Platform.SWITCH,
 ]
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
     """Setup the integration"""
     # This will register the services even if there's no ConfigEntry yet...
-    setup_services(hass)
+    _setup_services(hass)
     return True
 
 
@@ -59,7 +60,7 @@ async def async_unload_entry(
     return unload_ok
 
 
-def setup_services(hass: HomeAssistant) -> bool:
+def _setup_services(hass: HomeAssistant) -> bool:
     """Register the BirdBuddy service(s)"""
 
     async def handle_collect_postcard(service: ServiceCall) -> None:
