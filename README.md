@@ -50,12 +50,13 @@ A device is created for each Bird Buddy feeder associated with the account. See 
 
 # Entities
 
-| Entity     | Entity Type     | Notes                                        |
-|------------|-----------------|----------------------------------------------|
-| `Battery`  | `sensor`        | Current Bird Buddy battery percentage        |
-| `Charging` | `binary_sensor` | Whether the Bird Buddy is currently charging |
-| `State`    | `sensor`        | Current state (ready, offline, etc)          |
-| `Signal`   | `sensor`        | Current wifi signal (RSSI)                   |
+| Entity     | Entity Type     | Notes                                            |
+| ---------- | --------------- | ------------------------------------------------ |
+| `Battery`  | `sensor`        | Current Bird Buddy battery percentage            |
+| `Charging` | `binary_sensor` | Whether the Bird Buddy is currently charging     |
+| `Off-Grid` | `switch`        | Present and toggle Off-Grid status (owners only) |
+| `State`    | `sensor`        | Current state (ready, offline, etc)              |
+| `Signal`   | `sensor`        | Current wifi signal (RSSI)                       |
 
 More entities may be added in the future.
 
@@ -73,22 +74,23 @@ Collections tab in the Bird Buddy app).
 This event is fired when a new postcard is detected in the feed.
 
 | Field      | Description                                                                                                          |
-|------------|----------------------------------------------------------------------------------------------------------------------|
+| ---------- | -------------------------------------------------------------------------------------------------------------------- |
 | `postcard` | The `FeedNode` data for the `FeedItemNewPostcard` type.                                                              |
 | `sighting` | The `PostcardSighting` data, containing information about the sighting, potential species info, and images captured. |
 
 Some interesting fields from `sighting` include:
 
-* `sighting.medias[].contentUrl`, `.thumbnailUrl` - time-sensitive URLs that can be used to download the associated sighting image(s)
-* `sighting.sightingReport.sightings[]` - list of sightings grouped together in the postcard
-    * The data here depends on the type of sighting (i.e., `SightingRecognizedBird`, `SightingCantDecideWhichBird`, etc)
-    * Possible fields include `.suggestions` if the bird is not recognized, or `.species` for confidently recognized birds
-* `sighting.feeder.id` - not generally useful as is, but can be used to filter automations to those matching the specified Feeder.
+- `sighting.medias[].contentUrl`, `.thumbnailUrl` - time-sensitive URLs that can be used to download the associated sighting image(s)
+- `sighting.sightingReport.sightings[]` - list of sightings grouped together in the postcard
+  - The data here depends on the type of sighting (i.e., `SightingRecognizedBird`, `SightingCantDecideWhichBird`, etc)
+  - Possible fields include `.suggestions` if the bird is not recognized, or `.species` for confidently recognized birds
+- `sighting.feeder.id` - not generally useful as is, but can be used to filter automations to those matching the specified Feeder.
   This filter is applied automatically with the Device Trigger.
 
 This event data can also be passed through as-is to the [`birdbuddy.collect_postcard`](#birdbuddycollect_postcard) service.
 
 This event can also be added in an automation using the "A new postcard is ready" Device Trigger:
+
 ```yaml
 trigger:
   - platform: device
@@ -105,7 +107,7 @@ trigger:
 "Finishes" a postcard sighting by adding the media to the associated species collections, thus making them available in the [Media Browser](#media).
 
 | Service attribute data  | Optional | Description                                                                                |
-|-------------------------|----------|--------------------------------------------------------------------------------------------|
+| ----------------------- | -------- | ------------------------------------------------------------------------------------------ |
 | `postcard`              | No       | Postcard data from `birdbuddy_new_postcard_sighting` event                                 |
 | `sighting`              | No       | Sighting data from `birdbuddy_new_postcard_sighting` event                                 |
 | `strategy`              | Yes      | Strategy for resolving the sighting. One of `"recognized"`, `"best_guess"`, or `"mystery"` |
@@ -113,9 +115,9 @@ trigger:
 
 Postcard sighting strategies:
 
-* `recognized` (Default): collect the postcard only if Bird Buddy's AI identified a bird species. Note: the identified species may be incorrect.
-* `best_guess`: In the "can't decide which bird" sightings, a list of possible species is usually included. This strategy will select the
-  highest-confidence species automatically (assuming that confidence is at least `best_guess_confidence`, defaults to 10%).
+- `recognized` (Default): collect the postcard only if Bird Buddy's AI identified a bird species. Note: the identified species may be incorrect.
+- `best_guess`: In the "can't decide which bird" sightings, a list of possible species is usually included. This strategy will select the
+highest-confidence species automatically (assuming that confidence is at least `best_guess_confidence`, defaults to 10%).
 <!-- * `mystery`: If the bird is not recognized and no species meets the confidence threshold, collect the sighting as a "Mystery Visitor".
   NOTE: Mystery Visitor is not yet implemented. -->
 
