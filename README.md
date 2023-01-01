@@ -57,6 +57,7 @@ A device is created for each Bird Buddy feeder associated with the account. See 
 | `Off-Grid` | `switch`        | Present and toggle Off-Grid status (owners only) |
 | `State`    | `sensor`        | Current state (ready, offline, etc)              |
 | `Signal`   | `sensor`        | Current wifi signal (RSSI)                       |
+| `Update`   | `update`        | Show and install Firmware updates                |
 
 More entities may be added in the future.
 
