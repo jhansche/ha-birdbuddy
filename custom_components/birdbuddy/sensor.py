@@ -1,15 +1,14 @@
 """Bird Buddy sensors"""
 
+from collections.abc import Mapping
+from typing import Any
+
 from homeassistant.components.sensor import (
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
 )
-from collections.abc import Mapping
-from typing import Any
-from .coordinator import BirdBuddyDataUpdateCoordinator
-from .entity import BirdBuddyMixin
-from .device import BirdBuddyDevice
+
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, SIGNAL_STRENGTH_DECIBELS_MILLIWATT
 from homeassistant.helpers.entity import EntityCategory
@@ -17,6 +16,9 @@ from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN
+from .coordinator import BirdBuddyDataUpdateCoordinator
+from .entity import BirdBuddyMixin
+from .device import BirdBuddyDevice
 
 
 async def async_setup_entry(
@@ -92,10 +94,28 @@ class BirdBuddySignalEntity(BirdBuddyMixin, SensorEntity):
 class BirdBuddyStateEntity(BirdBuddyMixin, SensorEntity):
     """Bird Buddy Feeder state."""
 
+    _attr_device_class = SensorDeviceClass.ENUM
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_entity_registry_enabled_default = False
     _attr_has_entity_name = True
     _attr_name = "Feeder State"
+    _attr_options = [
+        # See birdbuddy/feeder.py, FeederState enum values
+        "DEEP_SLEEP",
+        "FACTORY_RESET",
+        "FIRMWARE_UPDATE",
+        "OFFLINE",
+        "OFF_GRID",
+        "ONLINE",
+        "OUT_OF_FEEDER",
+        "PENDING_FACTORY_RESET",
+        "PENDING_REMOVAL",
+        "READY_TO_STREAM",
+        "STREAMING",
+        "TAKING_POSTCARDS",
+        # anything unexpected
+        "UNKNOWN",
+    ]
     _attr_translation_key = "feeder_state"
 
     def __init__(

@@ -28,11 +28,14 @@
             "feeder_state": {
                 "state": {
                     "DEEP_SLEEP": "Sleeping",
+                    "FACTORY_RESET": "Reset to Factory",
                     "FIRMWARE_UPDATE": "Updating firmware",
                     "OFFLINE": "Offline",
                     "OFF_GRID": "Off-grid",
                     "ONLINE": "Online",
                     "OUT_OF_FEEDER": "Out of feeder",
+                    "PENDING_FACTORY_RESET": "Factory reset pending",
+                    "PENDING_REMOVAL": "Pending removal",
                     "READY_TO_STREAM": "Ready",
                     "STREAMING": "Streaming",
                     "TAKING_POSTCARDS": "Taking postcards"
