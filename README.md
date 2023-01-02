@@ -2,15 +2,24 @@
 
 Custom integration for [Bird Buddy](https://mybirdbuddy.com/).
 
+This component makes use of the [pybirdbuddy](https://github.com/jhansche/pybirdbuddy) library
+for API calls, also available on [PyPI](https://pypi.org/project/pybirdbuddy/).
+
 **Prior To Installation**
 
 You will need your Bird Buddy `email` and `password`.
 
-Note: if your BirdBuddy account was created using SSO (Google, Facebook, etc), those methods will
-not work currently. To work around that, you can sign up a new account using email and password,
-and then invite that new account as a member of your main/owner account. Be aware that certain
-information or functionality may not be available to member accounts (for example, "off-grid"
-settings and firmware version).
+> **Note**
+> 
+> If your BirdBuddy account was created using SSO (Google, Facebook, etc), those methods will
+> not work currently. To work around that, you can sign up a new account using email and password,
+> and then invite that new account as a member of your main/owner account. Be aware that certain
+> information or functionality may not be available to member accounts (for example, "off-grid"
+> settings and firmware version).
+>
+> Alternatively, you may reset the Bird Buddy unit and re-pair it with a new account that was created
+> with a password. See [Bird Buddy support](https://support.mybirdbuddy.com/hc/en-us/articles/9764938883089-Connecting-Bird-Buddy-to-a-different-Wi-Fi-network)
+> for more information.
 
 ## Installation
 
