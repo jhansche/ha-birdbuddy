@@ -1,0 +1,15 @@
+-r requirements.txt
+
+# From manifest.json
+python-graphql-client==0.4.3
+-e git+https://github.com/jhansche/pybirdbuddy.git@main#egg=pybirdbuddy
+
+# for tests
+codecov==2.1.12
+coverage==7.0.0
+pytest==7.2.0
+pytest-cov==3.0.0
+pytest-aiohttp==1.0.4
+pytest-asyncio==0.20.2
+pytest-homeassistant-custom-component==0.12.41
+
