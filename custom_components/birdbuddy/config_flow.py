@@ -2,15 +2,14 @@
 from __future__ import annotations
 
 from birdbuddy.client import BirdBuddy
+from birdbuddy.exceptions import AuthenticationFailedError
 from typing import Any
 
 import voluptuous as vol
 
 from homeassistant import config_entries
-from homeassistant.data_entry_flow import FlowResult
-from homeassistant.exceptions import ConfigEntryAuthFailed
-
 from homeassistant.const import CONF_PASSWORD, CONF_EMAIL
+from homeassistant.data_entry_flow import FlowResult
 
 from .const import DOMAIN
 
@@ -60,10 +59,20 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
 
     async def _async_auth_or_validate(self, input, errors):
         self._client = BirdBuddy(input[CONF_EMAIL], input[CONF_PASSWORD])
-        if not await self._client.refresh():
+        try:
+            result = await self._client.refresh()
+        except AuthenticationFailedError:
             self._client = None
             errors["base"] = "invalid_auth"
-            raise ConfigEntryAuthFailed("Authentication failed")
+            return None
+        except Exception:
+            self._client = None
+            errors["base"] = "cannot_connect"
+            return None
+        if not result:
+            self._client = None
+            errors["base"] = "cannot_connect"
+            return None
         return {
             "title": input.get(CONF_EMAIL),
         }
