@@ -54,7 +54,7 @@ def _find_coordinator_by_device(
         raise ValueError(f"Device {device_id} config entry is not loaded")
     if entry is None or entry.entry_id not in hass.data[DOMAIN]:
         raise ValueError(
-            f"Device {device_id} is not from an existing zwave_js config entry"
+            f"Device {device_id} is not from an existing birdbuddy config entry"
         )
     coordinator: BirdBuddyDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
     return coordinator
