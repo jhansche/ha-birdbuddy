@@ -1,9 +1,13 @@
 """Bird Buddy sensors"""
 
+from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
+from birdbuddy.birds import PostcardSighting
+
 from homeassistant.components.sensor import (
+    RestoreSensor,
     SensorDeviceClass,
     SensorEntity,
     SensorStateClass,
@@ -12,10 +16,10 @@ from homeassistant.components.sensor import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import PERCENTAGE, SIGNAL_STRENGTH_DECIBELS_MILLIWATT
 from homeassistant.helpers.entity import EntityCategory
-from homeassistant.core import HomeAssistant
+from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN
+from .const import DOMAIN, EVENT_NEW_POSTCARD_SIGHTING
 from .coordinator import BirdBuddyDataUpdateCoordinator
 from .entity import BirdBuddyMixin
 from .device import BirdBuddyDevice
@@ -32,6 +36,7 @@ async def async_setup_entry(
     async_add_entities(BirdBuddyBatteryEntity(f, coordinator) for f in feeders)
     async_add_entities(BirdBuddySignalEntity(f, coordinator) for f in feeders)
     async_add_entities(BirdBuddyStateEntity(f, coordinator) for f in feeders)
+    async_add_entities(BirdBuddyRecentVisitorEntity(f, coordinator) for f in feeders)
 
 
 class BirdBuddyBatteryEntity(BirdBuddyMixin, SensorEntity):
@@ -89,6 +94,124 @@ class BirdBuddySignalEntity(BirdBuddyMixin, SensorEntity):
     @property
     def extra_state_attributes(self) -> Mapping[str, Any]:
         return {"level": self.feeder.signal.state}
+
+
+class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
+    """Bird Buddy recent visitors"""
+
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
+    _attr_has_entity_name = True
+    _attr_name = "Recent Visitor"
+    _attr_extra_state_attributes = {}
+
+    def __init__(
+        self,
+        feeder: BirdBuddyDevice,
+        coordinator: BirdBuddyDataUpdateCoordinator,
+    ) -> None:
+        super().__init__(feeder, coordinator)
+        self._attr_unique_id = f"{self.feeder.id}-recent-visitor"
+
+    async def async_added_to_hass(self) -> None:
+        await super().async_added_to_hass()
+
+        @callback
+        def filter_my_postcards(event: Event) -> bool:
+            return self.feeder.id == event.data.get("sighting", {}).get(
+                "feeder", {}
+            ).get("id")
+
+        self.async_on_remove(
+            self.hass.bus.async_listen(
+                EVENT_NEW_POSTCARD_SIGHTING,
+                self._on_new_postcard,
+                event_filter=filter_my_postcards,
+            )
+        )
+
+        await self._update_latest_visitor()
+
+    async def _on_new_postcard(self, event: Event | None = None) -> None:
+        """ """
+        postcard = PostcardSighting(event.data["sighting"])
+
+        assert postcard.report.sightings
+        assert postcard.medias
+
+        # media has created_at
+        # but sightings[] does not.
+        media = next(iter(postcard.medias), None)
+
+        if media:
+            # TODO: this will use the BB url for picture, but that URL will
+            # expire. Will the frontend cache it? What if it does expire?
+            # We might need to download the image and serve it locally; or use
+            # the media id in order to link to it from the MediaSource; however,
+            # MediaSource only serves saved Collection media, and this being a new
+            # postcard, it might not be accessible there yet.
+            self._attr_entity_picture = media.content_url
+            # self._attr_extra_state_attributes["last_visit"] = media.created_at
+
+        # find the more recent of report.sightings[], and use that for species & media
+        sighting = postcard.report.sightings[0]
+        if sighting.sighting_type.is_recognized:
+            self._attr_native_value = sighting.species.name
+        else:
+            self._attr_native_value = sighting.sighting_type.value
+
+        self.async_write_ha_state()
+
+    async def _update_latest_visitor(self) -> None:
+        collections = await self.coordinator.client.refresh_collections()
+        collection = max(
+            collections.values(),
+            default=None,
+            key=lambda x: x.last_visit,
+        )
+        if not collection:
+            return
+
+        self._attr_native_value = collection.bird_name
+
+        media = await self.coordinator.client.collection(collection.collection_id)
+        if not media:
+            return
+
+        latest_media = max(
+            media.values(),
+            default=None,
+            key=lambda x: x.created_at,
+        )
+        if latest_media:
+            self._attr_entity_picture = latest_media.content_url
+        # self._attr_extra_state_attributes["last_visit"] = collection.last_visit
+        # self._attr_extra_state_attributes["total_visits"] = collection.total_visits
+
+    @property
+    def entity_picture(self) -> str | None:
+        if picture := super().entity_picture:
+            # Postcard listener will set the attribute directly
+            return picture
+        if collections := self.coordinator.client.collections:
+            # If not set by a postcard, we should get the most recent collection
+            # but also get the most recent media within that collection.
+            # That requires client.collection(collection_id), because we do not cache it
+            # but this property has to be atomic.
+            latest = max(collections.values(), key=lambda x: x.last_visit)
+            return latest.cover_media.content_url
+        return None
+
+    @property
+    def native_value(self) -> str:
+        if attr := super().native_value:
+            # Postcard listener set the attribute directly, use it
+            return attr
+        if collections := self.coordinator.client.collections:
+            # If not set, get the most recent collection
+            latest = max(collections.values(), key=lambda x: x.last_visit)
+            return latest.bird_name
+        return None
 
 
 class BirdBuddyStateEntity(BirdBuddyMixin, SensorEntity):
