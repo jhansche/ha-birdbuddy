@@ -19,6 +19,15 @@
     }
   },
   "entity": {
+    "select": {
+      "metric_state": {
+        "state": {
+          "LOW": "Low",
+          "MEDIUM": "Medium",
+          "HIGH": "High"
+        }
+      }
+    },
     "sensor": {
       "feeder_state": {
         "state": {

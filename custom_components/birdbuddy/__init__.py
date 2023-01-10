@@ -14,6 +14,7 @@ from .util import _find_coordinator_by_feeder
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
+    Platform.SELECT,
     Platform.SENSOR,
     Platform.SWITCH,
     Platform.UPDATE,
