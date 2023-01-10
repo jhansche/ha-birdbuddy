@@ -64,7 +64,7 @@ class BirdBuddyBatteryEntity(BirdBuddyMixin, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> Mapping[str, Any]:
-        return {"level": self.feeder.battery.state}
+        return {"level": self.feeder.battery.state.value}
 
 
 class BirdBuddySignalEntity(BirdBuddyMixin, SensorEntity):
@@ -93,7 +93,7 @@ class BirdBuddySignalEntity(BirdBuddyMixin, SensorEntity):
 
     @property
     def extra_state_attributes(self) -> Mapping[str, Any]:
-        return {"level": self.feeder.signal.state}
+        return {"level": self.feeder.signal.state.value}
 
 
 class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
