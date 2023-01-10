@@ -7,7 +7,7 @@
   "issue_tracker": "https://github.com/jhansche/ha-birdbuddy/issues",
   "requirements": [
     "python-graphql-client==0.4.3",
-    "pybirdbuddy==0.0.7"
+    "pybirdbuddy==0.0.8"
   ],
   "ssdp": [],
   "zeroconf": [],
