@@ -211,7 +211,7 @@ class BirdBuddyMediaSource(MediaSource):
             identifier=f"{config.entry_id}#{device.id}#{collection.collection_id}",
             media_class=MediaClass.DIRECTORY,
             media_content_type=MediaType.IMAGE,
-            title=f"{collection.bird_name}",
+            title=collection.bird_name,
             can_play=False,
             can_expand=True,
             children_media_class=MediaClass.IMAGE,
@@ -227,10 +227,7 @@ class BirdBuddyMediaSource(MediaSource):
     ) -> BrowseMediaSource:
         base = self._build_media_collection(config, device, coordinator, collection)
         base.children = []
-        # FIXME: need another api call to get full collection data
-        # FIXME: not sure how to get the full size url
         medias = await coordinator.client.collection(collection.collection_id)
-        # medias = [collection.cover_media["media"]]
         for (media_id, media) in medias.items():
             base.children.append(
                 BrowseMediaSource(
@@ -239,8 +236,8 @@ class BirdBuddyMediaSource(MediaSource):
                     media_class=_media_class(media),
                     media_content_type=_mime_type(media),
                     title=media.created_at,
-                    can_play=False,
-                    can_expand=False,
+                    can_play=media.is_video,
+                    can_expand=media.is_video,
                     thumbnail=media.thumbnail_url,
                 )
             )
