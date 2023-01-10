@@ -1,8 +1,7 @@
 """Bird Buddy Media Source"""
 
-from pathlib import PurePath
 from typing import Optional, cast
-from birdbuddy.media import Collection
+from birdbuddy.media import Collection, Media
 
 from homeassistant.components.media_player import MediaClass, MediaType
 from homeassistant.components.media_source.error import MediaSourceError, Unresolvable
@@ -16,18 +15,8 @@ from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
 
-from .const import DOMAIN, LOGGER
+from .const import DOMAIN
 from .coordinator import BirdBuddyDataUpdateCoordinator
-
-MIME_TYPE_MAP = {
-    # "movies": "video/mp4",
-    "images": "image/jpeg",
-}
-
-MEDIA_CLASS_MAP = {
-    # "movies": MediaClass.VIDEO,
-    "images": MediaClass.IMAGE,
-}
 
 
 class BirdBuddyMediaSource(MediaSource):
@@ -101,7 +90,7 @@ class BirdBuddyMediaSource(MediaSource):
         if not url:
             raise Unresolvable(f"Could not resolve media item: {item.identifier}")
 
-        return PlayMedia(url, MIME_TYPE_MAP["images"])
+        return PlayMedia(url, _mime_type(media))
 
     async def async_browse_media(
         self,
@@ -244,8 +233,8 @@ class BirdBuddyMediaSource(MediaSource):
                 BrowseMediaSource(
                     domain=DOMAIN,
                     identifier=f"{config.entry_id}#{device.id}#{collection.collection_id}#{media_id}",
-                    media_class=MEDIA_CLASS_MAP["images"],
-                    media_content_type=MIME_TYPE_MAP["images"],
+                    media_class=_media_class(media),
+                    media_content_type=_mime_type(media),
                     title=media.created_at,
                     can_play=False,
                     can_expand=False,
@@ -278,3 +267,16 @@ class BirdBuddyMediaSource(MediaSource):
 async def async_get_media_source(hass: HomeAssistant) -> BirdBuddyMediaSource:
     """Set up media source."""
     return BirdBuddyMediaSource(hass)
+
+
+def _media_class(media: Media) -> MediaClass:
+    if media.get("__typename") == "MediaVideo":
+        return MediaClass.VIDEO
+    return MediaClass.IMAGE
+
+
+def _mime_type(media: Media) -> str:
+    # TODO: Media class should expose this
+    if media.get("__typename") == "MediaVideo":
+        return "video/mp4"
+    return "image/jpeg"
