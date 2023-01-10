@@ -111,7 +111,10 @@ class BirdBuddyMediaSource(MediaSource):
                 device = self._get_device_or_raise(device_id)
 
             if config and device and collection_id:
-                if len(coordinator.client.collections) == 0:
+                if (
+                    not coordinator.client.collections
+                    or collection_id not in coordinator.client.collections
+                ):
                     # FIXME: cache it at all?
                     await coordinator.client.refresh_collections()
                 collection = coordinator.client.collections[collection_id]
@@ -123,7 +126,7 @@ class BirdBuddyMediaSource(MediaSource):
                 # Feeder selected: show collections on that feeder
                 # TODO: is this right? Are collections feeder based or login based?
                 # TODO: pass refresh_collections() to build
-                if len(coordinator.client.collections) == 0:
+                if not coordinator.client.collections:
                     # FIXME: better way to refresh?
                     await coordinator.client.refresh_collections()
                 # for a feeder/device, now look up the collections (one per bird?)

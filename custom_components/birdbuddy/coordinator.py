@@ -5,6 +5,7 @@ from __future__ import annotations
 from birdbuddy.birds import PostcardSighting, SightingFinishStrategy
 from birdbuddy.client import BirdBuddy
 from birdbuddy.feed import FeedNode, FeedNodeType
+from birdbuddy.media import Collection
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, EventOrigin
@@ -58,6 +59,13 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
         postcards = [
             node for node in feed if node.node_type == FeedNodeType.NewPostcard
         ]
+
+        for node in feed:
+            if node.node_type == FeedNodeType.SpeciesUnlocked and (
+                c := Collection(node.get("collection"))
+            ):
+                LOGGER.info("Recently unlocked species: %s", c.bird_name)
+                self.client.collections.setdefault(c.collection_id, c)
 
         LOGGER.debug("Found postcards %s", postcards)
         for postcard in postcards:
