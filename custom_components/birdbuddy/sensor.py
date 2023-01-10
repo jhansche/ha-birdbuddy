@@ -31,7 +31,7 @@ async def async_setup_entry(
     async_add_entities: AddEntitiesCallback,
 ) -> None:
     """Set up entities from a config entry."""
-    coordinator: BirdBuddyDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
+    coordinator = hass.data[DOMAIN][entry.entry_id]
     feeders = coordinator.feeders.values()
     async_add_entities(BirdBuddyBatteryEntity(f, coordinator) for f in feeders)
     async_add_entities(BirdBuddySignalEntity(f, coordinator) for f in feeders)
@@ -221,7 +221,6 @@ class BirdBuddyStateEntity(BirdBuddyMixin, SensorEntity):
     _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_entity_registry_enabled_default = False
     _attr_has_entity_name = True
-    _attr_icon = "mdi:bird"
     _attr_name = "Feeder State"
     _attr_options = [
         # See birdbuddy/feeder.py, FeederState enum values

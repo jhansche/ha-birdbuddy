@@ -24,15 +24,6 @@
         }
     },
     "entity": {
-        "select": {
-            "metric_state": {
-                "state": {
-                    "HIGH": "High",
-                    "LOW": "Low",
-                    "MEDIUM": "Medium"
-                }
-            }
-        },
         "sensor": {
             "feeder_state": {
                 "state": {
