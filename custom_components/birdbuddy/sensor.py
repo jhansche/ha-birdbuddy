@@ -5,6 +5,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from birdbuddy.birds import PostcardSighting
+from birdbuddy.media import is_media_expired
 
 from homeassistant.components.sensor import (
     RestoreSensor,
@@ -179,11 +180,11 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
             return
 
         latest_media = max(
-            media.values(),
+            (m for m in media.values() if not m.is_video),
             default=None,
             key=lambda x: x.created_at,
         )
-        if latest_media:
+        if latest_media and not latest_media.is_expired:
             self._attr_entity_picture = latest_media.content_url
         # self._attr_extra_state_attributes["last_visit"] = collection.last_visit
         # self._attr_extra_state_attributes["total_visits"] = collection.total_visits
@@ -191,8 +192,11 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
     @property
     def entity_picture(self) -> str | None:
         if picture := super().entity_picture:
-            # Postcard listener will set the attribute directly
-            return picture
+            if not is_media_expired(picture):
+                # Postcard listener will set the attribute directly
+                return picture
+            # Media URL is expired, try to refresh it
+            self._attr_entity_picture = None
         if collections := self.coordinator.client.collections:
             # If not set by a postcard, we should get the most recent collection
             # but also get the most recent media within that collection.
