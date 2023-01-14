@@ -1,7 +1,8 @@
 """Test the Bird Buddy config flow."""
-from unittest.mock import patch
+from unittest.mock import PropertyMock, patch
 
 from birdbuddy.exceptions import AuthenticationFailedError, NoResponseError
+from birdbuddy.user import BirdBuddyUser
 from homeassistant import config_entries
 from homeassistant.core import HomeAssistant
 from homeassistant.data_entry_flow import FlowResultType
@@ -17,9 +18,10 @@ async def test_form(hass: HomeAssistant) -> None:
     assert result["type"] == FlowResultType.FORM
     assert result["errors"] is None
 
-    with patch(
-            "birdbuddy.client.BirdBuddy.refresh",
-            return_value=True,
+    with patch("birdbuddy.client.BirdBuddy.refresh", return_value=True,), patch(
+        "birdbuddy.client.BirdBuddy.user",
+        new_callable=PropertyMock,
+        return_value=BirdBuddyUser({"name": "Test User"}),
     ), patch(
         "custom_components.birdbuddy.async_setup_entry",
         return_value=True,
@@ -34,7 +36,7 @@ async def test_form(hass: HomeAssistant) -> None:
         await hass.async_block_till_done()
 
     assert result2["type"] == FlowResultType.CREATE_ENTRY
-    assert result2["title"] == "test@email.com"
+    assert result2["title"] == "Test User"
     assert result2["data"] == {
         "email": "test@email.com",
         "password": "test-password",
@@ -49,8 +51,8 @@ async def test_form_invalid_auth(hass: HomeAssistant) -> None:
     )
 
     with patch(
-            "birdbuddy.client.BirdBuddy.refresh",
-            side_effect=AuthenticationFailedError,
+        "birdbuddy.client.BirdBuddy.refresh",
+        side_effect=AuthenticationFailedError,
     ):
         result2 = await hass.config_entries.flow.async_configure(
             result["flow_id"],
@@ -71,8 +73,8 @@ async def test_form_cannot_connect(hass: HomeAssistant) -> None:
     )
 
     with patch(
-            "birdbuddy.client.BirdBuddy.refresh",
-            side_effect=NoResponseError,
+        "birdbuddy.client.BirdBuddy.refresh",
+        side_effect=NoResponseError,
     ):
         result2 = await hass.config_entries.flow.async_configure(
             result["flow_id"],
