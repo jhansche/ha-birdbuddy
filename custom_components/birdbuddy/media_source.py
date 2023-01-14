@@ -141,6 +141,7 @@ class BirdBuddyMediaSource(MediaSource):
 
     def _account_media_source(self, config: ConfigEntry) -> BrowseMediaSource:
         # Return one Bird Buddy account source per config entry
+        coordinator = self.hass.data[DOMAIN][config.entry_id]
         return BrowseMediaSource(
             domain=DOMAIN,
             identifier=config.entry_id,
@@ -150,6 +151,7 @@ class BirdBuddyMediaSource(MediaSource):
             can_play=False,
             can_expand=True,
             children_media_class=MediaClass.DIRECTORY,
+            thumbnail=coordinator.client.user.avatar_url,
         )
 
     def _build_media_config(self, config: ConfigEntry) -> BrowseMediaSource:

@@ -74,5 +74,5 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             errors["base"] = "cannot_connect"
             return None
         return {
-            "title": input.get(CONF_EMAIL),
+            "title": self._client.user.name,
         }
