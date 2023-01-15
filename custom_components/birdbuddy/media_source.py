@@ -1,5 +1,6 @@
 """Bird Buddy Media Source"""
 
+from datetime import datetime
 from typing import Optional, cast
 from birdbuddy.media import Collection, Media
 
@@ -14,6 +15,7 @@ from homeassistant.components.media_source.models import (
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers import device_registry as dr
+import homeassistant.util.dt as dt_util
 
 from .const import DOMAIN
 from .coordinator import BirdBuddyDataUpdateCoordinator
@@ -231,13 +233,14 @@ class BirdBuddyMediaSource(MediaSource):
         base.children = []
         medias = await coordinator.client.collection(collection.collection_id)
         for (media_id, media) in medias.items():
+            relative_title = _best_timedelta_title(media.created_at, dt_util.utcnow())
             base.children.append(
                 BrowseMediaSource(
                     domain=DOMAIN,
                     identifier=f"{config.entry_id}#{device.id}#{collection.collection_id}#{media_id}",
                     media_class=_media_class(media),
                     media_content_type=_mime_type(media),
-                    title=media.created_at,
+                    title=relative_title,
                     can_play=media.is_video,
                     can_expand=media.is_video,
                     thumbnail=media.thumbnail_url,
@@ -282,3 +285,30 @@ def _mime_type(media: Media) -> str:
     if media.get("__typename") == "MediaVideo":
         return "video/mp4"
     return "image/jpeg"
+
+
+def _best_timedelta_title(other: datetime, now: datetime) -> str:
+    # TODO: better way to get easily recognizeable, localized, and relative (as needed) datetimes.
+
+    other = other.astimezone(dt_util.DEFAULT_TIME_ZONE).replace(microsecond=0)
+    if other > now:
+        # whoops?
+        return other.strftime("%c")
+    delta = now - other
+
+    if delta.days < 1:
+        # use "x <units> ago" relative string for < 24 hours
+        # possibly "today <time>" or just "<H:m>" time
+        return dt_util.get_age(other) + " ago"
+    # if days == 1, "yesterday"? "yesterday %X"?
+
+    if delta.days < 7:
+        # 1-7 days, use "<dow> <time>"
+        return other.strftime("%a, %X")
+
+    if delta.days < 365:
+        # within a year, full localized date+time
+        return other.strftime("%c")
+
+    # More than a year, show date only
+    return other.strftime("%x")
