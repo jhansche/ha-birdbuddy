@@ -19,6 +19,7 @@ collect_postcard:
         "
       required: false
       default: "recognized"
+      example: "recognized"
       selector:
         select:
           options:
@@ -29,18 +30,31 @@ collect_postcard:
       name: Best-guess confidence threshold
       description: Confidence threshold for auto-accepting Bird Buddy's recommendations.
       default: 10
+      example: 10
       selector:
         number:
           min: 0
           max: 100
           step: 1
           unit_of_measurement: "%"
+    share_media:
+      name: Share postcard media
+      description: Whether each media image should be shared with the community.
+      default: false
+      example: false
+      selector:
+        boolean:
     postcard:
       name: Postcard data
       description: Data from the FeedNode representing the postcard.
         This corresponds to the `.postcard` data received in the Event.
         The only field that matters is `.id`
       required: true
+      example:
+        - '{"id": "$postcardFeedItemId"}'
+        - "{{ trigger.event.data.postcard }}"
+      selector:
+        object:
       # TODO: support nested fields
       # fields:
       #   id:
@@ -52,6 +66,11 @@ collect_postcard:
         This corresponds to the `.sighting` data received in the Event. This should generally just be
         passed through from an automation.
       required: true
+      example:
+        - '{"feeder":{"id":"$feederId"}, "sightingReport":{"sightings":[]}}'
+        - "{{ trigger.event.data.sighting }}"
+      selector:
+        object:
       # TODO: support nested fields
       # fields:
       #   feeder:

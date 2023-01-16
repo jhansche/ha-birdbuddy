@@ -22,9 +22,9 @@ SERVICE_SCHEMA_COLLECT_POSTCARD = vol.Schema(
     {
         vol.Required("postcard"): cv.has_at_least_one_key("id"),
         vol.Required("sighting"): cv.has_at_least_one_key("sightingReport"),
-        vol.Optional(CONF_DEVICE_ID): cv.string,  # better?
+        vol.Optional(CONF_DEVICE_ID): cv.string,
         vol.Optional("strategy"): cv.string,
         vol.Optional("best_guess_confidence"): vol.Coerce(int),
-        # ...?
+        vol.Optional("share_media"): vol.Coerce(bool),
     }
 )
