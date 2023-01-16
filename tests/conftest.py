@@ -19,6 +19,12 @@ from unittest.mock import patch
 
 import pytest
 
+from pytest_homeassistant_custom_component.common import (
+    async_mock_service,
+    mock_device_registry,
+    mock_registry,
+)
+
 pytest_plugins = "pytest_homeassistant_custom_component"
 
 
@@ -36,7 +42,7 @@ def auto_enable_custom_integrations(enable_custom_integrations):
 def skip_notifications_fixture():
     """Skip notification calls."""
     with patch("homeassistant.components.persistent_notification.async_create"), patch(
-            "homeassistant.components.persistent_notification.async_dismiss"
+        "homeassistant.components.persistent_notification.async_dismiss"
     ):
         yield
 
@@ -47,7 +53,7 @@ def skip_notifications_fixture():
 def bypass_get_data_fixture():
     """Skip calls to get data from API."""
     with patch(
-            "custom_components.integration_blueprint.IntegrationBlueprintApiClient.async_get_data"
+        "custom_components.integration_blueprint.IntegrationBlueprintApiClient.async_get_data"
     ):
         yield
 
@@ -58,7 +64,25 @@ def bypass_get_data_fixture():
 def error_get_data_fixture():
     """Simulate error when retrieving data from API."""
     with patch(
-            "custom_components.integration_blueprint.IntegrationBlueprintApiClient.async_get_data",
-            side_effect=Exception,
+        "custom_components.integration_blueprint.IntegrationBlueprintApiClient.async_get_data",
+        side_effect=Exception,
     ):
         yield
+
+
+@pytest.fixture
+def device_reg(hass):
+    """Return an empty, loaded, registry."""
+    return mock_device_registry(hass)
+
+
+@pytest.fixture
+def entity_reg(hass):
+    """Return an empty, loaded, registry."""
+    return mock_registry(hass)
+
+
+@pytest.fixture
+def calls(hass):
+    """Track calls to a mock service."""
+    return async_mock_service(hass, "test", "automation")

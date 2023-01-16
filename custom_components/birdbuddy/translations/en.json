@@ -47,7 +47,8 @@
                     "PENDING_REMOVAL": "Pending removal",
                     "READY_TO_STREAM": "Ready",
                     "STREAMING": "Streaming",
-                    "TAKING_POSTCARDS": "Taking postcards"
+                    "TAKING_POSTCARDS": "Taking postcards",
+                    "UNKNOWN": "Unknown"
                 }
             }
         }

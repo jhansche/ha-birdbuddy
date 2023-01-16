@@ -8,7 +8,12 @@ from homeassistant.const import Platform, CONF_EMAIL, CONF_PASSWORD
 from homeassistant.core import HomeAssistant, ServiceCall
 from homeassistant.helpers.typing import ConfigType
 
-from .const import DOMAIN, LOGGER, SERVICE_SCHEMA_COLLECT_POSTCARD
+from .const import (
+    DOMAIN,
+    LOGGER,
+    SERVICE_COLLECT_POSTCARD,
+    SERVICE_SCHEMA_COLLECT_POSTCARD,
+)
 from .coordinator import BirdBuddyDataUpdateCoordinator
 from .util import _find_coordinator_by_feeder
 
@@ -88,7 +93,7 @@ def _setup_services(hass: HomeAssistant) -> bool:
 
     hass.services.async_register(
         DOMAIN,
-        "collect_postcard",
+        SERVICE_COLLECT_POSTCARD,
         handle_collect_postcard,
         schema=SERVICE_SCHEMA_COLLECT_POSTCARD,
     )

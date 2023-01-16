@@ -18,10 +18,17 @@ CONF_FEEDER_ID = "feeder_id"
 TRIGGER_TYPE_POSTCARD = "new_postcard"
 EVENT_NEW_POSTCARD_SIGHTING = f"{DOMAIN}_new_postcard_sighting"
 
+SERVICE_COLLECT_POSTCARD = "collect_postcard"
 SERVICE_SCHEMA_COLLECT_POSTCARD = vol.Schema(
     {
         vol.Required("postcard"): cv.has_at_least_one_key("id"),
-        vol.Required("sighting"): cv.has_at_least_one_key("sightingReport"),
+        vol.Required("sighting"): {
+            vol.Required("sightingReport"): {},
+            vol.Required("feeder"): {
+                vol.Required("id"): cv.string,
+                vol.Required("name"): cv.string,
+            },
+        },
         vol.Optional(CONF_DEVICE_ID): cv.string,
         vol.Optional("strategy"): cv.string,
         vol.Optional("best_guess_confidence"): vol.Coerce(int),
