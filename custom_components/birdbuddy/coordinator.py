@@ -132,6 +132,9 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
         sighting = PostcardSighting(data["sighting"])
         postcard_id = data["postcard"]["id"]
         strategy = SightingFinishStrategy(data.get("strategy", "recognized"))
+        confidence = data.get("best_guess_confidence", None)
+        share_media = data.get("share_media", False)
+
         LOGGER.debug(
             "Calling collect_postcard: id=%s, sighting=%s, strategy=%s",
             postcard_id,
@@ -142,6 +145,8 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
             postcard_id,
             sighting,
             strategy,
+            confidence_threshold=confidence,
+            share_media=share_media,
         )
         if success:
             LOGGER.info("Postcard collected to Media")
