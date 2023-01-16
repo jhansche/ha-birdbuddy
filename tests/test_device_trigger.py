@@ -1,7 +1,10 @@
 """The tests for Bird Buddy device triggers."""
 import pytest
 from homeassistant.components import automation
-from homeassistant.components.device_automation import DeviceAutomationType, InvalidDeviceAutomationConfig
+from homeassistant.components.device_automation import (
+    DeviceAutomationType,
+    InvalidDeviceAutomationConfig,
+)
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import EventOrigin
 from homeassistant.helpers import device_registry
@@ -10,32 +13,11 @@ from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
     assert_lists_same,
     async_get_device_automations,
-    async_mock_service,
-    mock_device_registry,
-    mock_registry,
 )
 
 from custom_components.birdbuddy import DOMAIN
 from custom_components.birdbuddy import device_trigger
 from custom_components.birdbuddy.const import EVENT_NEW_POSTCARD_SIGHTING
-
-
-@pytest.fixture
-def device_reg(hass):
-    """Return an empty, loaded, registry."""
-    return mock_device_registry(hass)
-
-
-@pytest.fixture
-def entity_reg(hass):
-    """Return an empty, loaded, registry."""
-    return mock_registry(hass)
-
-
-@pytest.fixture
-def calls(hass):
-    """Track calls to a mock service."""
-    return async_mock_service(hass, "test", "automation")
 
 
 async def setup_automation(hass, device_id, feeder_id, trigger_type):
@@ -63,7 +45,9 @@ async def setup_automation(hass, device_id, feeder_id, trigger_type):
     )
 
 
-async def test_get_triggers(hass, device_reg: device_registry.DeviceRegistry, entity_reg):
+async def test_get_triggers(
+    hass, device_reg: device_registry.DeviceRegistry, entity_reg
+):
     """Test we get the expected triggers from a birdbuddy."""
     config_entry = MockConfigEntry(domain="birdbuddy", data={})
     config_entry.add_to_hass(hass)
