@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 import asyncio
-
 from typing import Any
-
+from birdbuddy.feeder import FeederState
 from homeassistant.components.update import (
     UpdateDeviceClass,
     UpdateEntity,
@@ -18,6 +17,16 @@ from .const import DOMAIN, LOGGER
 from .coordinator import BirdBuddyDataUpdateCoordinator
 from .device import BirdBuddyDevice
 from .entity import BirdBuddyMixin
+
+
+REJECT_STATES = [
+    FeederState.DEEP_SLEEP,
+    FeederState.FACTORY_RESET,
+    FeederState.OFFLINE,
+    FeederState.PENDING_FACTORY_RESET,
+    FeederState.PENDING_REMOVAL,
+]
+"""Reject the update if in a state that would prevent it."""
 
 
 async def async_setup_entry(
@@ -85,6 +94,15 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
         self, version: str | None, backup: bool, **kwargs: Any
     ) -> None:
         """Install an update."""
+        if self.feeder.state in REJECT_STATES:
+            raise HomeAssistantError(
+                f"Cannot perform update when in state {self.feeder.state.value}"
+            )
+        if self.feeder.battery.percentage < 10 and not self.feeder.battery.is_charging:
+            raise HomeAssistantError(
+                f"Low battery, charge the Feeder first: {self.feeder.battery.percentage}%"
+            )
+
         if version and version != self.latest_version:
             LOGGER.warning(
                 "Ignoring requested version '%s', installing '%s' instead",
