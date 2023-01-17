@@ -20,6 +20,10 @@ class BirdBuddyMixin(CoordinatorEntity, RestoreEntity):
         self.feeder = feeder
         self._attr_device_info = feeder.device_info
 
+    def _handle_coordinator_update(self) -> None:
+        self.device_info.update(self.feeder.device_info)
+        return super()._handle_coordinator_update()
+
     @property
     def available(self) -> bool:
         return self.feeder is not None

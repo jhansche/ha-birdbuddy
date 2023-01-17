@@ -2,9 +2,8 @@
 
 from __future__ import annotations
 import asyncio
-
 from typing import Any
-
+from birdbuddy.feeder import FeederState
 from homeassistant.components.update import (
     UpdateDeviceClass,
     UpdateEntity,
@@ -18,6 +17,16 @@ from .const import DOMAIN, LOGGER
 from .coordinator import BirdBuddyDataUpdateCoordinator
 from .device import BirdBuddyDevice
 from .entity import BirdBuddyMixin
+
+
+REJECT_STATES = [
+    FeederState.DEEP_SLEEP,
+    FeederState.FACTORY_RESET,
+    FeederState.OFFLINE,
+    FeederState.PENDING_FACTORY_RESET,
+    FeederState.PENDING_REMOVAL,
+]
+"""Reject the update if in a state that would prevent it."""
 
 
 async def async_setup_entry(
@@ -37,7 +46,9 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
     coordinator: BirdBuddyDataUpdateCoordinator
 
     _attr_device_class = UpdateDeviceClass.FIRMWARE
-    _attr_supported_features = UpdateEntityFeature.INSTALL
+    _attr_supported_features = (
+        UpdateEntityFeature.INSTALL | UpdateEntityFeature.PROGRESS
+    )
     _attr_has_entity_name = True
     _attr_name = "Firmware Update"
 
@@ -71,8 +82,11 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
     @property
     def in_progress(self) -> bool | int | None:
         if not self.__update_state:
-            return None
+            return False
         if self.__update_state.is_complete:
+            self.__update_state = None
+            return False
+        if self.__update_state.progress is None:
             return False
         return self.__update_state.progress
 
@@ -80,6 +94,15 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
         self, version: str | None, backup: bool, **kwargs: Any
     ) -> None:
         """Install an update."""
+        if self.feeder.state in REJECT_STATES:
+            raise HomeAssistantError(
+                f"Cannot perform update when in state {self.feeder.state.value}"
+            )
+        if self.feeder.battery.percentage < 10 and not self.feeder.battery.is_charging:
+            raise HomeAssistantError(
+                f"Low battery, charge the Feeder first: {self.feeder.battery.percentage}%"
+            )
+
         if version and version != self.latest_version:
             LOGGER.warning(
                 "Ignoring requested version '%s', installing '%s' instead",
@@ -87,20 +110,19 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
                 self.latest_version,
             )
 
-        self._attr_in_progress = True
         result = await self.coordinator.client.update_firmware_start(self.feeder)
         self.__update_state = result
 
         while not result.is_complete:
-            if result.failure_reason is not None:
+            if result.is_failed:
                 self.__update_state = None
                 raise HomeAssistantError(
                     f"Update failed on {self.feeder.name}: {result.failure_reason};\n"
                     f"{result}"
                 )
 
-            self._attr_in_progress = self.in_progress
             self.async_write_ha_state()
+            LOGGER.debug("Current update progress=%s", self.__update_state)
 
             # Firmware updates tend to be relatively slow...
             await asyncio.sleep(15)
@@ -110,4 +132,3 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
         assert result.is_complete
         LOGGER.info("Bird Buddy update complete: %s", self.feeder.name)
         self.__update_state = None
-        self._attr_in_progress = False
