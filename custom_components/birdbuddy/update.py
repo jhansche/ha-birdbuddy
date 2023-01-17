@@ -37,7 +37,9 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
     coordinator: BirdBuddyDataUpdateCoordinator
 
     _attr_device_class = UpdateDeviceClass.FIRMWARE
-    _attr_supported_features = UpdateEntityFeature.INSTALL
+    _attr_supported_features = (
+        UpdateEntityFeature.INSTALL | UpdateEntityFeature.PROGRESS
+    )
     _attr_has_entity_name = True
     _attr_name = "Firmware Update"
 
@@ -71,8 +73,11 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
     @property
     def in_progress(self) -> bool | int | None:
         if not self.__update_state:
-            return None
+            return False
         if self.__update_state.is_complete:
+            self.__update_state = None
+            return False
+        if self.__update_state.progress is None:
             return False
         return self.__update_state.progress
 
@@ -87,20 +92,19 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
                 self.latest_version,
             )
 
-        self._attr_in_progress = True
         result = await self.coordinator.client.update_firmware_start(self.feeder)
         self.__update_state = result
 
         while not result.is_complete:
-            if result.failure_reason is not None:
+            if result.is_failed:
                 self.__update_state = None
                 raise HomeAssistantError(
                     f"Update failed on {self.feeder.name}: {result.failure_reason};\n"
                     f"{result}"
                 )
 
-            self._attr_in_progress = self.in_progress
             self.async_write_ha_state()
+            LOGGER.debug("Current update progress=%s", self.__update_state)
 
             # Firmware updates tend to be relatively slow...
             await asyncio.sleep(15)
@@ -110,4 +114,3 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
         assert result.is_complete
         LOGGER.info("Bird Buddy update complete: %s", self.feeder.name)
         self.__update_state = None
-        self._attr_in_progress = False
