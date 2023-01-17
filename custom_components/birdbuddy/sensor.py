@@ -5,7 +5,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from birdbuddy.birds import PostcardSighting
-from birdbuddy.media import is_media_expired
+from birdbuddy.media import Collection, is_media_expired
 
 from homeassistant.components.sensor import (
     RestoreSensor,
@@ -20,7 +20,7 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN, EVENT_NEW_POSTCARD_SIGHTING
+from .const import DOMAIN, EVENT_NEW_POSTCARD_SIGHTING, LOGGER
 from .coordinator import BirdBuddyDataUpdateCoordinator
 from .entity import BirdBuddyMixin
 from .device import BirdBuddyDevice
@@ -107,6 +107,8 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
     _attr_name = "Recent Visitor"
     _attr_extra_state_attributes = {}
 
+    _latest_collection: Collection | None = None
+
     def __init__(
         self,
         feeder: BirdBuddyDevice,
@@ -164,13 +166,33 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
 
         self.async_write_ha_state()
 
-    async def _update_latest_visitor(self) -> None:
-        collections = await self.coordinator.client.refresh_collections()
-        collection = max(
-            collections.values(),
+    def _handle_coordinator_update(self) -> None:
+        self._latest_collection = self._my_latest_collection(
+            list(self.coordinator.client.collections.values())
+        )
+        return super()._handle_coordinator_update()
+
+    def _my_latest_collection(self, collections: list[Collection]) -> Collection | None:
+        latest = max(
+            (
+                c
+                for c in collections
+                # FIXME: this will filter only the COVER image.
+                #  If multiple Feeders have the same species, this won't allow the same
+                #  species to appear as a recent visitor of both feeders.
+                if c.feeder_name == self.feeder.name
+            ),
             default=None,
             key=lambda x: x.last_visit,
         )
+        return latest
+
+    async def _update_latest_visitor(self) -> None:
+        collections = await self.coordinator.client.refresh_collections()
+        self._latest_collection = (
+            collection := self._my_latest_collection(list(collections.values()))
+        )
+
         if not collection:
             return
 
@@ -198,13 +220,12 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
                 return picture
             # Media URL is expired, try to refresh it
             self._attr_entity_picture = None
-        if collections := self.coordinator.client.collections:
-            # If not set by a postcard, we should get the most recent collection
-            # but also get the most recent media within that collection.
-            # That requires client.collection(collection_id), because we do not cache it
-            # but this property has to be atomic.
-            latest = max(collections.values(), key=lambda x: x.last_visit)
-            return latest.cover_media.content_url
+        # If not set by a postcard, we should get the most recent collection
+        # but also get the most recent media within that collection.
+        # That requires client.collection(collection_id), because we do not cache it
+        # but this property has to be atomic.
+        if self._latest_collection:
+            return self._latest_collection.cover_media.content_url
         return None
 
     @property
@@ -212,10 +233,9 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
         if attr := super().native_value:
             # Postcard listener set the attribute directly, use it
             return attr
-        if collections := self.coordinator.client.collections:
+        if self._latest_collection:
             # If not set, get the most recent collection
-            latest = max(collections.values(), key=lambda x: x.last_visit)
-            return latest.bird_name
+            return self._latest_collection.bird_name
         return None
 
 
