@@ -24,14 +24,16 @@ SERVICE_SCHEMA_COLLECT_POSTCARD = vol.Schema(
         vol.Required("postcard"): cv.has_at_least_one_key("id"),
         vol.Required("sighting"): {
             vol.Required("sightingReport"): {},
-            vol.Required("feeder"): {
-                vol.Required("id"): cv.string,
-                vol.Required("name"): cv.string,
-            },
+            vol.Required("feeder"): vol.All(
+                cv.has_at_least_one_key("id"),
+                cv.has_at_least_one_key("name"),
+            ),
+            vol.Extra: object,
         },
         vol.Optional(CONF_DEVICE_ID): cv.string,
         vol.Optional("strategy"): cv.string,
         vol.Optional("best_guess_confidence"): vol.Coerce(int),
         vol.Optional("share_media"): vol.Coerce(bool),
-    }
+    },
+    extra=vol.ALLOW_EXTRA,
 )
