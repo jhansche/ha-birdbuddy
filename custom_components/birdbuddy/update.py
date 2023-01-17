@@ -61,6 +61,7 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
     ) -> None:
         super().__init__(feeder, coordinator)
         self._attr_unique_id = f"{self.feeder.id}-updater"
+        self._attr_entity_registry_enabled_default = self.feeder.is_owner
 
     @property
     def available(self) -> bool:
