@@ -20,6 +20,7 @@ from .device import BirdBuddyDevice
 from .entity import BirdBuddyMixin
 
 
+MAX_ERRORS = 4
 REJECT_STATES = [
     FeederState.DEEP_SLEEP,
     FeederState.FACTORY_RESET,
@@ -125,6 +126,8 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
             ) from exc
         self.__update_state = result
 
+        errors = 0  # allow periodic transient errors
+
         while not result.is_complete:
             if result.is_failed:
                 self.__update_state = None
@@ -138,7 +141,25 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
 
             # Firmware updates tend to be relatively slow...
             await asyncio.sleep(15)
-            result = await self.coordinator.client.update_firmware_check(self.feeder)
+
+            try:
+                result = await self.coordinator.client.update_firmware_check(
+                    self.feeder
+                )
+                # Reset the error counter
+                errors = 0
+            except GraphqlError as exc:
+                errors += 1
+                if errors >= MAX_ERRORS:
+                    # If we hit 4 errors in a row, abort
+                    raise
+                LOGGER.warning(
+                    "Error checking update progress; will try again (%d/%d): %s",
+                    exc,
+                    errors,
+                    MAX_ERRORS,
+                )
+
             self.__update_state = result
 
         assert result.is_complete
