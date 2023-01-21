@@ -89,7 +89,10 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
             return False
         if self.__update_state.progress is None:
             return False
-        return self.__update_state.progress
+        if self.__update_state.progress == 0:
+            # Return True to show an indeterminate progress indicator
+            return True
+        return int(self.__update_state.progress)
 
     async def async_install(
         self, version: str | None, backup: bool, **kwargs: Any
