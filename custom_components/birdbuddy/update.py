@@ -3,6 +3,7 @@
 from __future__ import annotations
 import asyncio
 from typing import Any
+from birdbuddy.exceptions import GraphqlError
 from birdbuddy.feeder import FeederState
 from homeassistant.components.update import (
     UpdateDeviceClass,
@@ -98,6 +99,8 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
         self, version: str | None, backup: bool, **kwargs: Any
     ) -> None:
         """Install an update."""
+        assert self.__update_state is None
+
         if self.feeder.state in REJECT_STATES:
             raise HomeAssistantError(
                 f"Cannot perform update when in state {self.feeder.state.value}"
@@ -114,7 +117,12 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
                 self.latest_version,
             )
 
-        result = await self.coordinator.client.update_firmware_start(self.feeder)
+        try:
+            result = await self.coordinator.client.update_firmware_start(self.feeder)
+        except GraphqlError as exc:
+            raise HomeAssistantError(
+                "Error starting update: " + exc.response.get("message", exc)
+            ) from exc
         self.__update_state = result
 
         while not result.is_complete:
