@@ -3,6 +3,7 @@
 from __future__ import annotations
 import asyncio
 from typing import Any
+from birdbuddy.exceptions import GraphqlError
 from birdbuddy.feeder import FeederState
 from homeassistant.components.update import (
     UpdateDeviceClass,
@@ -19,6 +20,7 @@ from .device import BirdBuddyDevice
 from .entity import BirdBuddyMixin
 
 
+MAX_ERRORS = 4
 REJECT_STATES = [
     FeederState.DEEP_SLEEP,
     FeederState.FACTORY_RESET,
@@ -89,12 +91,17 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
             return False
         if self.__update_state.progress is None:
             return False
-        return self.__update_state.progress
+        if self.__update_state.progress == 0:
+            # Return True to show an indeterminate progress indicator
+            return True
+        return int(self.__update_state.progress)
 
     async def async_install(
         self, version: str | None, backup: bool, **kwargs: Any
     ) -> None:
         """Install an update."""
+        assert self.__update_state is None
+
         if self.feeder.state in REJECT_STATES:
             raise HomeAssistantError(
                 f"Cannot perform update when in state {self.feeder.state.value}"
@@ -111,8 +118,15 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
                 self.latest_version,
             )
 
-        result = await self.coordinator.client.update_firmware_start(self.feeder)
+        try:
+            result = await self.coordinator.client.update_firmware_start(self.feeder)
+        except GraphqlError as exc:
+            raise HomeAssistantError(
+                "Error starting update: " + exc.response.get("message", exc)
+            ) from exc
         self.__update_state = result
+
+        errors = 0  # allow periodic transient errors
 
         while not result.is_complete:
             if result.is_failed:
@@ -127,7 +141,25 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
 
             # Firmware updates tend to be relatively slow...
             await asyncio.sleep(15)
-            result = await self.coordinator.client.update_firmware_check(self.feeder)
+
+            try:
+                result = await self.coordinator.client.update_firmware_check(
+                    self.feeder
+                )
+                # Reset the error counter
+                errors = 0
+            except GraphqlError as exc:
+                errors += 1
+                if errors >= MAX_ERRORS:
+                    # If we hit 4 errors in a row, abort
+                    raise
+                LOGGER.warning(
+                    "Error checking update progress; will try again (%d/%d): %s",
+                    exc,
+                    errors,
+                    MAX_ERRORS,
+                )
+
             self.__update_state = result
 
         assert result.is_complete
