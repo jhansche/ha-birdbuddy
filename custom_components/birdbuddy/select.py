@@ -58,7 +58,7 @@ class BirdBuddyFrequencySelector(BirdBuddyMixin, SelectEntity):
         return self.feeder.frequency.value.lower()
 
     async def async_select_option(self, option: str) -> None:
-        option = MetricState(option)
+        option = MetricState(option.upper())
         assert option != MetricState.UNKNOWN
         result = await self.coordinator.client.set_frequency(
             self.feeder,
