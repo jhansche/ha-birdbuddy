@@ -250,20 +250,20 @@ class BirdBuddyStateEntity(BirdBuddyMixin, SensorEntity):
     _attr_name = "Feeder State"
     _attr_options = [
         # See birdbuddy/feeder.py, FeederState enum values
-        "DEEP_SLEEP",
-        "FACTORY_RESET",
-        "FIRMWARE_UPDATE",
-        "OFFLINE",
-        "OFF_GRID",
-        "ONLINE",
-        "OUT_OF_FEEDER",
-        "PENDING_FACTORY_RESET",
-        "PENDING_REMOVAL",
-        "READY_TO_STREAM",
-        "STREAMING",
-        "TAKING_POSTCARDS",
+        "deep_sleep",
+        "factory_reset",
+        "firmware_update",
+        "offline",
+        "off_grid",
+        "online",
+        "out_of_feeder",
+        "pending_factory_reset",
+        "pending_removal",
+        "ready_to_stream",
+        "streaming",
+        "taking_postcards",
         # anything unexpected
-        "UNKNOWN",
+        "unknown",
     ]
     _attr_translation_key = "feeder_state"
 
@@ -278,4 +278,4 @@ class BirdBuddyStateEntity(BirdBuddyMixin, SensorEntity):
     @property
     def native_value(self) -> int:
         """Return the state of the sensor."""
-        return self.feeder.state.value
+        return self.feeder.state.value.lower()

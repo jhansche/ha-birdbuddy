@@ -3,28 +3,28 @@
         "select": {
             "metric_state": {
                 "state": {
-                    "HIGH": "H\u00f6gt",
-                    "LOW": "L\u00e5g",
-                    "MEDIUM": "Medium"
+                    "high": "H\u00f6gt",
+                    "low": "L\u00e5g",
+                    "medium": "Medium"
                 }
             }
         },
         "sensor": {
             "feeder_state": {
                 "state": {
-                    "DEEP_SLEEP": "Sover",
-                    "FACTORY_RESET": "Fabriks\u00e5terst\u00e4llning",
-                    "FIRMWARE_UPDATE": "Firmwareuppdatering",
-                    "OFFLINE": "Offline",
-                    "OFF_GRID": "Bortkopplad",
-                    "ONLINE": "Online",
-                    "OUT_OF_FEEDER": "Kameran urtagen",
-                    "PENDING_FACTORY_RESET": "V\u00e4ntande fabriks\u00e5terst\u00e4llning",
-                    "PENDING_REMOVAL": "V\u00e4ntande borttagning",
-                    "READY_TO_STREAM": "Klar",
-                    "STREAMING": "Str\u00f6mmar video",
-                    "TAKING_POSTCARDS": "Tar bild",
-                    "UNKNOWN": "Ok\u00e4nt"
+                    "deep_sleep": "Sover",
+                    "factory_reset": "Fabriks\u00e5terst\u00e4llning",
+                    "firmware_update": "Firmwareuppdatering",
+                    "offline": "Offline",
+                    "off_grid": "Bortkopplad",
+                    "online": "Online",
+                    "out_of_feeder": "Kameran urtagen",
+                    "pending_factory_reset": "V\u00e4ntande fabriks\u00e5terst\u00e4llning",
+                    "pending_removal": "V\u00e4ntande borttagning",
+                    "ready_to_stream": "Klar",
+                    "streaming": "Str\u00f6mmar video",
+                    "taking_postcards": "Tar bild",
+                    "unknown": "Ok\u00e4nt"
                 }
             }
         }
