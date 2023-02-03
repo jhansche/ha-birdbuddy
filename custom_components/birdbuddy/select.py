@@ -40,9 +40,9 @@ class BirdBuddyFrequencySelector(BirdBuddyMixin, SelectEntity):
     _attr_entity_registry_enabled_default = False
     _attr_translation_key = "metric_state"
     _attr_options = [
-        "LOW",
-        "MEDIUM",
-        "HIGH",
+        "low",
+        "medium",
+        "high",
     ]
 
     def __init__(
@@ -55,7 +55,7 @@ class BirdBuddyFrequencySelector(BirdBuddyMixin, SelectEntity):
 
     @property
     def current_option(self) -> str | None:
-        return self.feeder.frequency.value
+        return self.feeder.frequency.value.lower()
 
     async def async_select_option(self, option: str) -> None:
         option = MetricState(option)
