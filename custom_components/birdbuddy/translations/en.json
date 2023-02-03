@@ -27,28 +27,28 @@
         "select": {
             "metric_state": {
                 "state": {
-                    "HIGH": "High",
-                    "LOW": "Low",
-                    "MEDIUM": "Medium"
+                    "high": "High",
+                    "low": "Low",
+                    "medium": "Medium"
                 }
             }
         },
         "sensor": {
             "feeder_state": {
                 "state": {
-                    "DEEP_SLEEP": "Sleeping",
-                    "FACTORY_RESET": "Reset to Factory",
-                    "FIRMWARE_UPDATE": "Updating firmware",
-                    "OFFLINE": "Offline",
-                    "OFF_GRID": "Off-grid",
-                    "ONLINE": "Online",
-                    "OUT_OF_FEEDER": "Out of feeder",
-                    "PENDING_FACTORY_RESET": "Factory reset pending",
-                    "PENDING_REMOVAL": "Pending removal",
-                    "READY_TO_STREAM": "Ready",
-                    "STREAMING": "Streaming",
-                    "TAKING_POSTCARDS": "Taking postcards",
-                    "UNKNOWN": "Unknown"
+                    "deep_sleep": "Sleeping",
+                    "factory_reset": "Reset to Factory",
+                    "firmware_update": "Updating firmware",
+                    "off_grid": "Off-grid",
+                    "offline": "Offline",
+                    "online": "Online",
+                    "out_of_feeder": "Out of feeder",
+                    "pending_factory_reset": "Factory reset pending",
+                    "pending_removal": "Pending removal",
+                    "ready_to_stream": "Ready",
+                    "streaming": "Streaming",
+                    "taking_postcards": "Taking postcards",
+                    "unknown": "Unknown"
                 }
             }
         }
