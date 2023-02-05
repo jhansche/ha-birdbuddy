@@ -5,7 +5,8 @@ from collections.abc import Mapping
 from typing import Any
 
 from birdbuddy.birds import PostcardSighting
-from birdbuddy.media import Collection, is_media_expired
+from birdbuddy.feed import FeedNodeType
+from birdbuddy.media import Collection, Media, is_media_expired
 
 from homeassistant.components.sensor import (
     RestoreSensor,
@@ -20,7 +21,7 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN, EVENT_NEW_POSTCARD_SIGHTING, LOGGER
+from .const import DOMAIN, EVENT_NEW_POSTCARD_SIGHTING
 from .coordinator import BirdBuddyDataUpdateCoordinator
 from .entity import BirdBuddyMixin
 from .device import BirdBuddyDevice
@@ -108,6 +109,7 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
     _attr_extra_state_attributes = {}
 
     _latest_collection: Collection | None = None
+    _latest_media: Media | None = None
 
     def __init__(
         self,
@@ -148,12 +150,7 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
         media = next(iter(postcard.medias), None)
 
         if media:
-            # TODO: this will use the BB url for picture, but that URL will
-            # expire. Will the frontend cache it? What if it does expire?
-            # We might need to download the image and serve it locally; or use
-            # the media id in order to link to it from the MediaSource; however,
-            # MediaSource only serves saved Collection media, and this being a new
-            # postcard, it might not be accessible there yet.
+            self._latest_media = media
             self._attr_entity_picture = media.content_url
             # self._attr_extra_state_attributes["last_visit"] = media.created_at
 
@@ -166,66 +163,44 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
 
         self.async_write_ha_state()
 
-    def _handle_coordinator_update(self) -> None:
-        self._latest_collection = self._my_latest_collection(
-            list(self.coordinator.client.collections.values())
-        )
-        return super()._handle_coordinator_update()
-
-    def _my_latest_collection(self, collections: list[Collection]) -> Collection | None:
-        latest = max(
-            (
-                c
-                for c in collections
-                # FIXME: this will filter only the COVER image.
-                #  If multiple Feeders have the same species, this won't allow the same
-                #  species to appear as a recent visitor of both feeders.
-                if c.feeder_name == self.feeder.name
-            ),
-            default=None,
-            key=lambda x: x.last_visit,
-        )
-        return latest
-
     async def _update_latest_visitor(self) -> None:
-        collections = await self.coordinator.client.refresh_collections()
-        self._latest_collection = (
-            collection := self._my_latest_collection(list(collections.values()))
+        feed = await self.coordinator.client.feed()
+        items = feed.filter(
+            of_type=[FeedNodeType.SpeciesSighting, FeedNodeType.SpeciesUnlocked]
         )
+        my_items = [
+            item
+            for item in items
+            if (self.feeder.id in item.get("media", {}).get("thumbnailUrl", ""))
+            and (item.get("collection", {}).get("species", None))
+        ]
 
-        if not collection:
-            return
+        if latest := max(my_items, default=None, key=lambda x: x.created_at):
+            self._latest_media = Media(latest["media"])
+            self._latest_collection = Collection(latest["collection"])
 
-        self._attr_native_value = collection.bird_name
-
-        media = await self.coordinator.client.collection(collection.collection_id)
-        if not media:
-            return
-
-        latest_media = max(
-            (m for m in media.values() if not m.is_video),
-            default=None,
-            key=lambda x: x.created_at,
-        )
-        if latest_media and not latest_media.is_expired:
-            self._attr_entity_picture = latest_media.content_url
-        # self._attr_extra_state_attributes["last_visit"] = collection.last_visit
-        # self._attr_extra_state_attributes["total_visits"] = collection.total_visits
+            self._attr_native_value = self._latest_collection.bird_name
+            self._attr_entity_picture = self._latest_media.thumbnail_url
+            self.async_write_ha_state()
 
     @property
     def entity_picture(self) -> str | None:
         if picture := super().entity_picture:
             if not is_media_expired(picture):
-                # Postcard listener will set the attribute directly
                 return picture
-            # Media URL is expired, try to refresh it
             self._attr_entity_picture = None
-        # If not set by a postcard, we should get the most recent collection
-        # but also get the most recent media within that collection.
-        # That requires client.collection(collection_id), because we do not cache it
-        # but this property has to be atomic.
+
+        # FIXME: no good way to refresh if the picture url is expired
+
+        if self._latest_media:
+            picture = self._latest_media.content_url or self._latest_media.thumbnail_url
+            if not is_media_expired(picture):
+                return picture
+
         if self._latest_collection:
-            return self._latest_collection.cover_media.content_url
+            picture = self._latest_collection.cover_media.content_url
+            if not is_media_expired(picture):
+                return picture
         return None
 
     @property
