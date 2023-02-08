@@ -107,7 +107,7 @@ class BirdBuddyMediaSource(MediaSource):
                 )
 
             if config:
-                return self._build_media_collections(config, coordinator)
+                return await self._build_media_collections(config, coordinator)
 
         # Root of the media source: show all configured logins
         return self._build_media_configs()
@@ -186,13 +186,13 @@ class BirdBuddyMediaSource(MediaSource):
             )
         return base
 
-    def _build_media_collections(
+    async def _build_media_collections(
         self,
         config: ConfigEntry,
         coordinator: BirdBuddyDataUpdateCoordinator,
     ) -> BrowseMediaSource:
         base = self._account_media_source(config)
-        collections = coordinator.client.collections
+        collections = await coordinator.client.refresh_collections()
         base.children = [
             self._build_media_collection(
                 config,
