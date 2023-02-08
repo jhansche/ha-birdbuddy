@@ -171,8 +171,11 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
         my_items = [
             item
             for item in items
-            if (self.feeder.id in item.get("media", {}).get("thumbnailUrl", ""))
-            and (item.get("collection", {}).get("species", None))
+            if item
+            and item.get("media")
+            and item.get("collection")  # collection=None if it's been removed
+            and (self.feeder.id in item["media"].get("thumbnailUrl", ""))
+            and (item["collection"].get("species", None))
         ]
 
         if latest := max(my_items, default=None, key=lambda x: x.created_at):
