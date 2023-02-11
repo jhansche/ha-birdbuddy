@@ -4,9 +4,9 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
-from birdbuddy.birds import PostcardSighting
 from birdbuddy.feed import FeedNodeType
 from birdbuddy.media import Collection, Media, is_media_expired
+from birdbuddy.sightings import PostcardSighting
 
 from homeassistant.components.sensor import (
     RestoreSensor,

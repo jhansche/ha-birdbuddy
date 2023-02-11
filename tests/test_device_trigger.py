@@ -72,9 +72,17 @@ async def test_get_triggers(
     assert_lists_same(triggers, expected_triggers)
 
 
-async def test_fires_on_postcard_event(hass, calls):
+async def test_fires_on_postcard_event(
+    hass, device_reg: device_registry.DeviceRegistry, calls
+):
     """Test new-postcard event firing triggers the device."""
-    assert await setup_automation(hass, "deviceid", "feeder1", "new_postcard")
+    config_entry = MockConfigEntry(domain="birdbuddy", data={})
+    config_entry.add_to_hass(hass)
+    device_entry = device_reg.async_get_or_create(
+        config_entry_id=config_entry.entry_id,
+        identifiers={(DOMAIN, "feeder1")},
+    )
+    assert await setup_automation(hass, device_entry.id, "feeder1", "new_postcard")
 
     message = {"sighting": {"feeder": {"id": "feeder1"}}, "postcard": {}}
     hass.bus.async_fire(EVENT_NEW_POSTCARD_SIGHTING, message)

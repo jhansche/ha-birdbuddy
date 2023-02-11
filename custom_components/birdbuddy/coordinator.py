@@ -2,10 +2,10 @@
 
 from __future__ import annotations
 
-from birdbuddy.birds import PostcardSighting, SightingFinishStrategy
 from birdbuddy.client import BirdBuddy
 from birdbuddy.feed import FeedNode, FeedNodeType
 from birdbuddy.media import Collection
+from birdbuddy.sightings import PostcardSighting, SightingFinishStrategy
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, EventOrigin
@@ -119,7 +119,7 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
 
         feeders = {id: BirdBuddyDevice(f) for (id, f) in self.client.feeders.items()}
         # pylint: disable=invalid-name
-        for (i, f) in feeders.items():
+        for i, f in feeders.items():
             if i in self.feeders:
                 self.feeders[i].update(f)
             else:
