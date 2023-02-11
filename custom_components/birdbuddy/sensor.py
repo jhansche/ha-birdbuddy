@@ -21,7 +21,7 @@ from homeassistant.helpers.entity import EntityCategory
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN, EVENT_NEW_POSTCARD_SIGHTING
+from .const import DOMAIN, EVENT_NEW_POSTCARD_SIGHTING, LOGGER
 from .coordinator import BirdBuddyDataUpdateCoordinator
 from .entity import BirdBuddyMixin
 from .device import BirdBuddyDevice
@@ -154,12 +154,38 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
             self._attr_entity_picture = media.content_url
             # self._attr_extra_state_attributes["last_visit"] = media.created_at
 
-        # find the more recent of report.sightings[], and use that for species & media
-        sighting = postcard.report.sightings[0]
-        if sighting.sighting_type.is_recognized:
-            self._attr_native_value = sighting.species.name
+        if unlocked := [
+            s for s in postcard.report.sightings if s.sighting_type.is_unlocked
+        ]:
+            # NOTE: this might not be correct - if one sighting has multiple recognized
+            # species, and one unlocked species, it's highly probably that the one unlocked
+            # species is a mis-identification!
+            # It's a little unusual for a single sighting to contain multiple bird species.
+            self._attr_native_value = unlocked[0].species.name
+            LOGGER.debug(
+                "Reporting recent visitor from unlocked: %s", self._attr_native_value
+            )
+        elif recognized := [
+            s for s in postcard.report.sightings if s.sighting_type.is_recognized
+        ]:
+            # Next best, select a recognized species
+            self._attr_native_value = recognized[0].species.name
+            LOGGER.debug(
+                "Reporting recent visitor from recognized: %s", self._attr_native_value
+            )
+        elif guessable := [s for s in postcard.report.sightings if s.suggestions]:
+            # Else, select one that has a list of suggestions
+            suggested = guessable[0].suggestions[0]
+            self._attr_native_value = suggested.species.name
+            self._latest_collection = suggested
+            LOGGER.info(
+                "Reporting recent visitor from unrecognized suggestion: %s", suggested
+            )
         else:
-            self._attr_native_value = sighting.sighting_type.value
+            # We don't know what it was. Instead of reporting a bogus "cannot decide"
+            # type, just clear the value.
+            self._attr_native_value = None
+            LOGGER.info("Cannot decide species: %s", postcard.report.sightings[0])
 
         self.async_write_ha_state()
 
@@ -182,7 +208,7 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
             self._latest_media = Media(latest["media"])
             self._latest_collection = Collection(latest["collection"])
 
-            self._attr_native_value = self._latest_collection.bird_name
+            self._attr_native_value = self._latest_collection.species.name
             self._attr_entity_picture = self._latest_media.thumbnail_url
             self.async_write_ha_state()
 
@@ -199,6 +225,7 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
             picture = self._latest_media.content_url or self._latest_media.thumbnail_url
             if not is_media_expired(picture):
                 return picture
+            self._latest_media = None
 
         if self._latest_collection:
             picture = self._latest_collection.cover_media.content_url
