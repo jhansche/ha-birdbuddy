@@ -1,7 +1,7 @@
 """Test the Bird Buddy config flow."""
 from unittest.mock import ANY, patch
 
-from birdbuddy.birds import SightingFinishStrategy
+from birdbuddy.sightings import SightingFinishStrategy
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.setup import async_setup_component
 import pytest
