@@ -39,6 +39,7 @@ async def async_setup_entry(
     async_add_entities(BirdBuddySignalEntity(f, coordinator) for f in feeders)
     async_add_entities(BirdBuddyStateEntity(f, coordinator) for f in feeders)
     async_add_entities(BirdBuddyRecentVisitorEntity(f, coordinator) for f in feeders)
+    async_add_entities(BirdBuddyFoodStateEntity(f, coordinator) for f in feeders)
 
 
 class BirdBuddyBatteryEntity(BirdBuddyMixin, SensorEntity):
@@ -284,3 +285,35 @@ class BirdBuddyStateEntity(BirdBuddyMixin, SensorEntity):
     def native_value(self) -> int:
         """Return the state of the sensor."""
         return self.feeder.state.value.lower()
+
+
+class BirdBuddyFoodStateEntity(BirdBuddyMixin, SensorEntity):
+    """Bird Buddy Food/Seed level."""
+
+    _attr_device_class = SensorDeviceClass.ENUM
+    _attr_entity_category = EntityCategory.DIAGNOSTIC
+    _attr_entity_registry_enabled_default = False
+    _attr_entity_registry_visible_default = False
+    _attr_has_entity_name = True
+    _attr_icon = "mdi:food-turkey"
+    _attr_name = "Food Level"
+    _attr_translation_key = "metric_state"
+    _attr_options = [
+        "low",
+        "medium",
+        "high",
+    ]
+    _attr_attribution = "(This entity is incubating)"
+
+    def __init__(
+        self,
+        feeder: BirdBuddyDevice,
+        coordinator: BirdBuddyDataUpdateCoordinator,
+    ) -> None:
+        super().__init__(feeder, coordinator)
+        self._attr_unique_id = f"{self.feeder.id}-food-state"
+
+    @property
+    def native_value(self) -> int:
+        """Return the state of the sensor."""
+        return self.feeder.food.value.lower()

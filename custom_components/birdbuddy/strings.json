@@ -45,6 +45,13 @@
           "taking_postcards": "Taking postcards",
           "unknown": "Unknown"
         }
+      },
+      "metric_state": {
+        "state": {
+          "low": "Low",
+          "medium": "Medium",
+          "high": "High"
+        }
       }
     }
   },

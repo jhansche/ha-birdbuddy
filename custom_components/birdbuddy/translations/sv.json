@@ -26,6 +26,13 @@
                     "taking_postcards": "Tar bild",
                     "unknown": "Ok\u00e4nt"
                 }
+            },
+            "metric_state": {
+                "state": {
+                    "high": "H\u00f6gt",
+                    "low": "L\u00e5g",
+                    "medium": "Medium"
+                }
             }
         }
     }
