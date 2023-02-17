@@ -11,5 +11,5 @@ pytest==7.2.1
 pytest-cov==3.0.0
 pytest-aiohttp==1.0.4
 pytest-asyncio==0.20.2
-pytest-homeassistant-custom-component==0.12.55
-
+py==1.10.0  # Fixes pytest-sugar 0.9.5
+pytest-homeassistant-custom-component==0.12.57
