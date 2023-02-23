@@ -13,7 +13,7 @@
   "loggers": [
     "birdbuddy",
     "pybirdbuddy"
-  ]
+  ],
   "requirements": [
     "python-graphql-client==0.4.3",
     "pybirdbuddy==0.0.13"
