@@ -1,20 +1,18 @@
 """Bird Buddy Selectors"""
 
 from __future__ import annotations
-import asyncio
 
-from typing import Any
 from birdbuddy.feeder import MetricState
 
 from homeassistant.components.select import (
     SelectEntity,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, HomeAssistantError
+from homeassistant.core import HomeAssistant
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
-from .const import DOMAIN, LOGGER
+from .const import DOMAIN
 from .coordinator import BirdBuddyDataUpdateCoordinator
 from .device import BirdBuddyDevice
 from .entity import BirdBuddyMixin
@@ -44,6 +42,8 @@ class BirdBuddyFrequencySelector(BirdBuddyMixin, SelectEntity):
         "medium",
         "high",
     ]
+    # TODO: remove once it is verified working
+    _attr_attribution = "(This entity is incubating)"
 
     def __init__(
         self,

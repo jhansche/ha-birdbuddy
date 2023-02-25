@@ -35,7 +35,6 @@ class BirdBuddyOffGridSwitch(BirdBuddyMixin, SwitchEntity):
 
     _attr_device_class = SwitchDeviceClass.SWITCH
     _attr_entity_category = EntityCategory.CONFIG
-    _attr_entity_registry_enabled_default = False
     _attr_name = "Off-Grid"
     _attr_has_entity_name = True
     coordinator: BirdBuddyDataUpdateCoordinator

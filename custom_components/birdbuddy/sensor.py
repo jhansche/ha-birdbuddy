@@ -16,7 +16,11 @@ from homeassistant.components.sensor import (
 )
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import PERCENTAGE, SIGNAL_STRENGTH_DECIBELS_MILLIWATT
+from homeassistant.const import (
+    PERCENTAGE,
+    SIGNAL_STRENGTH_DECIBELS_MILLIWATT,
+    UnitOfTemperature,
+)
 from homeassistant.helpers.entity import EntityCategory
 from homeassistant.core import Event, HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -39,7 +43,10 @@ async def async_setup_entry(
     async_add_entities(BirdBuddySignalEntity(f, coordinator) for f in feeders)
     async_add_entities(BirdBuddyStateEntity(f, coordinator) for f in feeders)
     async_add_entities(BirdBuddyRecentVisitorEntity(f, coordinator) for f in feeders)
+    # Incubating: Food level always reports LOW
     async_add_entities(BirdBuddyFoodStateEntity(f, coordinator) for f in feeders)
+    # Incubating: Temperature always reports 0
+    async_add_entities(BirdBuddyTemperatureEntity(f, coordinator) for f in feeders)
 
 
 class BirdBuddyBatteryEntity(BirdBuddyMixin, SensorEntity):
@@ -102,7 +109,6 @@ class BirdBuddySignalEntity(BirdBuddyMixin, SensorEntity):
 class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
     """Bird Buddy recent visitors"""
 
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
     _attr_entity_registry_enabled_default = False
     _attr_has_entity_name = True
     _attr_icon = "mdi:bird"
@@ -249,8 +255,6 @@ class BirdBuddyStateEntity(BirdBuddyMixin, SensorEntity):
     """Bird Buddy Feeder state."""
 
     _attr_device_class = SensorDeviceClass.ENUM
-    _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_entity_registry_enabled_default = False
     _attr_has_entity_name = True
     _attr_icon = "mdi:bird"
     _attr_name = "Feeder State"
@@ -287,13 +291,44 @@ class BirdBuddyStateEntity(BirdBuddyMixin, SensorEntity):
         return self.feeder.state.value.lower()
 
 
+class BirdBuddyTemperatureEntity(BirdBuddyMixin, SensorEntity):
+    """Bird Buddy feeder temperature"""
+
+    _attr_device_class = SensorDeviceClass.TEMPERATURE
+    _attr_entity_registry_enabled_default = False  # Incubating
+    _attr_entity_category = EntityCategory.DIAGNOSTIC  # Incubating
+    _attr_has_entity_name = True
+    _attr_name = "Temperature"
+    # TODO: remove once it is verified working
+    _attr_attribution = "(This entity is incubating)"
+    # FIXME: value is always 0, cannot tell unit
+    _attr_native_unit_of_measurement = UnitOfTemperature.CELSIUS
+
+    def __init__(
+        self,
+        feeder: BirdBuddyDevice,
+        coordinator: BirdBuddyDataUpdateCoordinator,
+    ) -> None:
+        super().__init__(feeder, coordinator)
+        self._attr_unique_id = f"{self.feeder.id}-temperature"
+
+    @property
+    def native_value(self) -> int:
+        """Temperature reported by the feeder"""
+        return self.feeder.temperature
+
+    async def add_to_platform_finish(self) -> None:
+        await super().add_to_platform_finish()
+        if self.enabled:
+            LOGGER.warning("Bird Buddy Temperature entity is incubating")
+
+
 class BirdBuddyFoodStateEntity(BirdBuddyMixin, SensorEntity):
     """Bird Buddy Food/Seed level."""
 
     _attr_device_class = SensorDeviceClass.ENUM
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_entity_registry_enabled_default = False
-    _attr_entity_registry_visible_default = False
+    _attr_entity_registry_enabled_default = False  # Incubating
     _attr_has_entity_name = True
     _attr_icon = "mdi:food-turkey"
     _attr_name = "Food Level"
@@ -303,6 +338,7 @@ class BirdBuddyFoodStateEntity(BirdBuddyMixin, SensorEntity):
         "medium",
         "high",
     ]
+    # TODO: remove once it is verified working
     _attr_attribution = "(This entity is incubating)"
 
     def __init__(
@@ -317,3 +353,8 @@ class BirdBuddyFoodStateEntity(BirdBuddyMixin, SensorEntity):
     def native_value(self) -> int:
         """Return the state of the sensor."""
         return self.feeder.food.value.lower()
+
+    async def add_to_platform_finish(self) -> None:
+        await super().add_to_platform_finish()
+        if self.enabled:
+            LOGGER.warning("Bird Buddy Food Level entity is incubating")

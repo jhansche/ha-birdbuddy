@@ -31,7 +31,6 @@ class BirdBuddyChargingEntity(BirdBuddyMixin, BinarySensorEntity):
 
     _attr_device_class = BinarySensorDeviceClass.BATTERY_CHARGING
     _attr_entity_category = EntityCategory.DIAGNOSTIC
-    _attr_entity_registry_enabled_default = False
     _attr_name = "Charging"
     _attr_has_entity_name = True
 
