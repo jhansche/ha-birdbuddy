@@ -1,0 +1,63 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Ger\u00e4t ist bereits konfiguriert"
+        },
+        "error": {
+            "cannot_connect": "Verbindung fehlgeschlagen",
+            "invalid_auth": "Ung\u00fcltige Authentifizierung",
+            "unknown": "Unerwarteter Fehler"
+        },
+        "step": {
+            "user": {
+                "data": {
+                    "email": "Email",
+                    "password": "Passwort"
+                },
+                "title": "Bitte gib deine Bird Buddy-Anmeldedaten ein"
+            }
+        }
+    },
+    "device_automation": {
+        "trigger_type": {
+            "new_postcard": "Eine neue Postkarte ist bereit"
+        }
+    },
+    "entity": {
+        "select": {
+            "metric_state": {
+                "state": {
+                    "high": "Hoch",
+                    "low": "Niedrig",
+                    "medium": "Mittel"
+                }
+            }
+        },
+        "sensor": {
+            "feeder_state": {
+                "state": {
+                    "deep_sleep": "Schlafend",
+                    "factory_reset": "Zur\u00fccksetzen auf Werkseinstellung",
+                    "firmware_update": "Aktualisierung der Firmware",
+                    "off_grid": "Vom Netz getrennt",
+                    "offline": "Offline",
+                    "online": "Online",
+                    "out_of_feeder": "Aus dem Vogelf\u00fctterer",
+                    "pending_factory_reset": "Werksr\u00fcckstellung steht an",
+                    "pending_removal": "Ausstehende Entnahme",
+                    "ready_to_stream": "Bereit f\u00fcr Besuch",
+                    "streaming": "Streaming",
+                    "taking_postcards": "Fotos machen",
+                    "unknown": "Unbekannt"
+                }
+            },
+            "metric_state": {
+                "state": {
+                    "high": "Hoch",
+                    "low": "Niedrig",
+                    "medium": "Mittel"
+                }
+            }
+        }
+    }
+}
