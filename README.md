@@ -10,7 +10,7 @@ for API calls, also available on [PyPI](https://pypi.org/project/pybirdbuddy/).
 You will need your Bird Buddy `email` and `password`.
 
 > **Note**
-> 
+>
 > If your BirdBuddy account was created using SSO (Google, Facebook, etc), those methods will
 > not work currently. To work around that, you can sign up a new account using email and password,
 > and then invite that new account as a member of your main/owner account. Be aware that certain
@@ -149,4 +149,16 @@ action:
       # pass-through these 2 event fields as they are
       postcard: "{{ trigger.event.data.postcard }}"
       sighting: "{{ trigger.event.data.sighting }}"
+```
+
+#### Blueprint
+
+To add the Blueprint, use the button below:
+
+[![Open your Home Assistant instance and show the blueprint import dialog with a specific blueprint pre-filled.](https://my.home-assistant.io/badges/blueprint_import.svg)](https://my.home-assistant.io/redirect/blueprint_import/?blueprint_url=https%3A%2F%2Fgithub.com%2Fjhansche%2Fha-birdbuddy%2Fblob%2Fmain%2Fcustom_components%2Fbirdbuddy%2Fblueprints%2Fcollect_postcard.yaml)
+
+or go to **Settings** > **Automations & Scenes** > **Blueprints**, click the **Import Blueprint** button, and enter this URL:
+
+```
+https://github.com/jhansche/ha-birdbuddy/blob/main/custom_components/birdbuddy/blueprints/collect_postcard.yaml
 ```
