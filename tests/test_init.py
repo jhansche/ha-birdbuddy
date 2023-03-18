@@ -1,5 +1,6 @@
 """Test component setup."""
 from unittest.mock import patch, PropertyMock
+from birdbuddy.user import BirdBuddyUser
 
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
@@ -34,7 +35,11 @@ async def test_setup_entry(hass: HomeAssistant):
     ), patch(
         "birdbuddy.client.BirdBuddy.feeders",
         new_callable=PropertyMock,
-        return_value={"feeder1": {"id": "feeder1", "name": "Test Feeder"}}
+        return_value={"feeder1": {"id": "feeder1", "name": "Test Feeder"}},
+    ), patch(
+        "birdbuddy.client.BirdBuddy.user",
+        new_callable=PropertyMock,
+        return_value=BirdBuddyUser({"name": "Test Account"}),
     ):
         assert await hass.config_entries.async_setup(config_entry.entry_id)
 

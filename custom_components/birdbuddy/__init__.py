@@ -52,7 +52,7 @@ async def async_setup_entry(
             entry,
             title=client.user.name,
             options={},
-            unique_id=entry[CONF_EMAIL],
+            unique_id=entry.data[CONF_EMAIL],
         )
 
     await hass.config_entries.async_forward_entry_setups(
