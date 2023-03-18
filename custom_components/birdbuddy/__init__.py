@@ -5,7 +5,8 @@ from birdbuddy.client import BirdBuddy
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform, CONF_EMAIL, CONF_PASSWORD
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import HomeAssistant, ServiceCall, callback
+from homeassistant.helpers import device_registry as dr
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
@@ -15,7 +16,7 @@ from .const import (
     SERVICE_SCHEMA_COLLECT_POSTCARD,
 )
 from .coordinator import BirdBuddyDataUpdateCoordinator
-from .util import _find_coordinator_by_feeder
+from .util import _feeder_id_for_device, _find_coordinator_by_feeder
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
@@ -45,12 +46,44 @@ async def async_setup_entry(
     hass.data[DOMAIN][entry.entry_id] = coordinator
     await coordinator.async_config_entry_first_refresh()
 
+    if entry.title != client.user.name:
+        entry.title = client.user.name
+        hass.config_entries.async_update_entry(
+            entry,
+            title=client.user.name,
+            options={},
+            unique_id=entry[CONF_EMAIL],
+        )
+
     await hass.config_entries.async_forward_entry_setups(
         entry,
         PLATFORMS,
     )
 
+    async_cleanup_devices(hass, entry)
+
     return True
+
+
+@callback
+def async_cleanup_devices(hass: HomeAssistant, entry: ConfigEntry):
+    """Clean up old devices no longer associated with the account."""
+    coordinator: BirdBuddyDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
+    if not coordinator:
+        LOGGER.warning(
+            "Unable to clean up devices for Bird Buddy entry '%s'", entry.title
+        )
+        return
+
+    reg = dr.async_get(hass)
+    entries = dr.async_entries_for_config_entry(reg, entry.entry_id)
+    for dev in entries:
+        feeder_id = _feeder_id_for_device(hass, dev.id)
+        if feeder_id not in coordinator.client.feeders:
+            # Note: if there were any device triggers, those automations will
+            # become disabled automatically.
+            LOGGER.info("Removing orphaned device: %s (%s)", dev.name, dev.id)
+            reg.async_remove_device(dev.id)
 
 
 async def async_unload_entry(
