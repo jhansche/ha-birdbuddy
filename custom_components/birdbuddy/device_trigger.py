@@ -87,6 +87,8 @@ async def async_attach_trigger(
 ) -> CALLBACK_TYPE:
     """Attach a trigger."""
     event_data = {}
+    if CONF_FEEDER_ID not in config:
+        config[CONF_FEEDER_ID] = _feeder_id_for_device(hass, config[CONF_DEVICE_ID])
     if CONF_FEEDER_ID in config:
         # Add feeder id to trigger event data
         # The event will include .sighting.feeder.id, so that's what we will trigger on

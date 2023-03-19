@@ -1,0 +1,56 @@
+blueprint:
+  name: Collect Bird Buddy Postcard
+  description: Collect a Bird Buddy Postcard when a bird visits the feeder.
+  domain: automation
+  source_url: https://github.com/jhansche/ha-birdbuddy/blob/main/custom_components/birdbuddy/blueprints/collect_postcard.yaml
+  author: Joe Hansche
+  input:
+    feeder_device:
+      name: Bird Buddy device
+      selector:
+        device:
+          integration: birdbuddy
+    collect_strategy:
+      name: Collection strategy
+      default: best_guess
+      selector:
+        select:
+          options:
+            - value: recognized
+              label: Only confidently recognized species
+            - value: best_guess
+              label: Select the best-guess species
+            - value: mystery
+              label: Best guess, or save as a mystery visitor
+          mode: dropdown
+    best_guess_confidence:
+      name: Best-guess confidence
+      description: Minimum confidence by the BB AI to accept a sighting.
+      default: 20
+      selector:
+        number:
+          min: 1
+          max: 100
+          unit_of_measurement: "%"
+    share_media:
+      name: Share Media?
+      default: true
+      selector:
+        boolean: {}
+
+mode: single
+trigger:
+  platform: device
+  domain: birdbuddy
+  device_id: !input feeder_device
+  type: new_postcard
+action:
+  - alias: Collect a Postcard
+    service: birdbuddy.collect_postcard
+    data_template:
+      strategy: !input collect_strategy
+      best_guess_confidence: !input best_guess_confidence
+      share_media: !input share_media
+      postcard: "{{ trigger.event.data.postcard }}"
+      sighting: "{{ trigger.event.data.sighting }}"
+    enabled: true
