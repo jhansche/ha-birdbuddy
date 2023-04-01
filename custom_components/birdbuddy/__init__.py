@@ -6,6 +6,7 @@ from birdbuddy.client import BirdBuddy
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform, CONF_EMAIL, CONF_PASSWORD
 from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
@@ -65,6 +66,15 @@ async def async_unload_entry(
         hass.data[DOMAIN].pop(entry.entry_id)
 
     return unload_ok
+
+
+async def async_remove_config_entry_device(
+    hass: HomeAssistant,
+    config_entry: ConfigEntry,
+    device_entry: DeviceEntry,
+) -> bool:
+    """Remove a config entry from a device."""
+    return True
 
 
 def _setup_services(hass: HomeAssistant) -> bool:
