@@ -41,6 +41,7 @@ async def async_setup_entry(
     """Set up Bird Buddy from a config entry."""
     hass.data.setdefault(DOMAIN, {})
     client = BirdBuddy(entry.data[CONF_EMAIL], entry.data[CONF_PASSWORD])
+    client.language_code = hass.config.language
     coordinator = BirdBuddyDataUpdateCoordinator(hass, client, entry)
 
     hass.data[DOMAIN][entry.entry_id] = coordinator
