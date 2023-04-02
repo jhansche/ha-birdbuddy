@@ -1,0 +1,63 @@
+{
+    "config": {
+        "abort": {
+            "already_configured": "Apparaat is al geconfigureerd"
+        },
+        "error": {
+            "cannot_connect": "Kan geen verbinding maken",
+            "invalid_auth": "Ongeldige authenticatie",
+            "unknown": "Onverwachte fout"
+        },
+        "step": {
+            "user": {
+                "data": {
+                    "email": "E-mail",
+                    "password": "Wachtwoord"
+                },
+                "title": "Voer de login gegevens van je Bird Buddy in"
+            }
+        }
+    },
+    "device_automation": {
+        "trigger_type": {
+            "new_postcard": "Er staat een nieuwe ansichtkaart klaar"
+        }
+    },
+    "entity": {
+        "select": {
+            "metric_state": {
+                "state": {
+                    "high": "Hoog",
+                    "low": "Laag",
+                    "medium": "Gemiddeld"
+                }
+            }
+        },
+        "sensor": {
+            "feeder_state": {
+                "state": {
+                    "deep_sleep": "Aan het slapen",
+                    "factory_reset": "Reset naar fabrieksinstellingen",
+                    "firmware_update": "Bijwerken van de firmware",
+                    "off_grid": "Off-grid",
+                    "offline": "Offline",
+                    "online": "Online",
+                    "out_of_feeder": "Camera is buiten de feeder",
+                    "pending_factory_reset": "Bezig met reset naar fabrieksinstellingen",
+                    "pending_removal": "Bezig met verwijderen",
+                    "ready_to_stream": "Gereed voor opnamen",
+                    "streaming": "Streaming (video)",
+                    "taking_postcards": "Opnames aan het maken",
+                    "unknown": "Onbekend"
+                }
+            },
+            "metric_state": {
+                "state": {
+                    "high": "Hoog",
+                    "low": "Laag",
+                    "medium": "Gemiddeld"
+                }
+            }
+        }
+    }
+}
