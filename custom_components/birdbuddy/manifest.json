@@ -16,9 +16,9 @@
   ],
   "requirements": [
     "python-graphql-client==0.4.3",
-    "pybirdbuddy==0.0.14"
+    "pybirdbuddy==0.0.15"
   ],
   "ssdp": [],
-  "version": "0.0.15",
+  "version": "0.0.16",
   "zeroconf": []
 }
