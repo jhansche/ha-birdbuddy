@@ -52,7 +52,17 @@ async def async_setup_entry(
         PLATFORMS,
     )
 
+    entry.async_on_unload(entry.add_update_listener(update_listener))
+
     return True
+
+
+async def update_listener(
+    hass: HomeAssistant,
+    entry: ConfigEntry,
+):
+    """Handle options update."""
+    LOGGER.info("Options updated: %s", entry.options)
 
 
 async def async_unload_entry(

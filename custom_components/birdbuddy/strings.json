@@ -18,6 +18,29 @@
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
     }
   },
+  "options": {
+    "step": {
+      "options_menu": {
+        "title": "Configure Options",
+        "menu_options": {
+          "camera_options": "Recent Visitor Camera entity"
+        }
+      },
+      "camera_options": {
+        "title": "Recent Visitor Camera",
+        "data": {
+          "recent_visitor_camera": "Create Recent Visitor camera entity",
+          "recent_visitor_video": "Use video media",
+          "recent_visitor_snapshot_limit": "Snapshot limit"
+        },
+        "data_description": {
+          "recent_visitor_camera": "Enable this to create a Camera entity of Recent Visitors media",
+          "recent_visitor_video": "When checked and a recent visit includes video media, that video will be looped as the camera footage",
+          "recent_visitor_snapshot_limit": "When video is not available or disabled, still images will be used as the video frames of the camera"
+        }
+      }
+    }
+  },
   "entity": {
     "select": {
       "metric_state": {

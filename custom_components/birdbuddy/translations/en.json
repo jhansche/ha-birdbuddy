@@ -59,5 +59,28 @@
                 }
             }
         }
+    },
+    "options": {
+        "step": {
+            "camera_options": {
+                "data": {
+                    "recent_visitor_camera": "Create Recent Visitor camera entity",
+                    "recent_visitor_snapshot_limit": "Snapshot limit",
+                    "recent_visitor_video": "Use video media"
+                },
+                "data_description": {
+                    "recent_visitor_camera": "Enable this to create a Camera entity of Recent Visitors media",
+                    "recent_visitor_snapshot_limit": "When video is not available or disabled, still images will be used as the video frames of the camera",
+                    "recent_visitor_video": "When checked and a recent visit includes video media, that video will be looped as the camera footage"
+                },
+                "title": "Recent Visitor Camera"
+            },
+            "options_menu": {
+                "menu_options": {
+                    "camera_options": "Recent Visitor Camera entity"
+                },
+                "title": "Configure Options"
+            }
+        }
     }
 }
