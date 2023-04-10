@@ -59,14 +59,21 @@ A device is created for each Bird Buddy feeder associated with the account. See 
 
 # Entities
 
-| Entity     | Entity Type     | Notes                                            |
-| ---------- | --------------- | ------------------------------------------------ |
-| `Battery`  | `sensor`        | Current Bird Buddy battery percentage            |
-| `Charging` | `binary_sensor` | Whether the Bird Buddy is currently charging     |
-| `Off-Grid` | `switch`        | Present and toggle Off-Grid status (owners only) |
-| `State`    | `sensor`        | Current state (ready, offline, etc)              |
-| `Signal`   | `sensor`        | Current wifi signal (RSSI)                       |
-| `Update`   | `update`        | Show and install Firmware updates                |
+| Entity           | Entity Type     | Notes                                                                                                                                           |
+|------------------|-----------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Battery`        | `sensor`        | Current Bird Buddy battery percentage                                                                                                           |
+| `Charging`       | `binary_sensor` | Whether the Bird Buddy is currently charging                                                                                                    |
+| `Off-Grid`       | `switch`        | Present and toggle Off-Grid status (owners only)                                                                                                |
+| `Recent Visitor` | `sensor`        | State represents the most recent visitor's bird species name, and the `entity_picture` points to the cover media of that recent postcard visit. |
+| `State`          | `sensor`        | Current state (ready, offline, etc)                                                                                                             |
+| `Signal`         | `sensor`        | Current wifi signal (RSSI)                                                                                                                      |
+| `Update`         | `update`        | Show and install Firmware updates (owners only)                                                                                                 |
+
+Some entities are disabled or hidden by default, if they represent an advanced use case (for example,
+the "Signal" and "Recent Visitor" entities). There are also some entities that are disabled by
+default because the support is not yet enabled by the Bird Buddy API (for example, the Temperature
+and Food Level sensors are not yet enabled by Bird Buddy; and the "Frequency" setting does not appear
+to be have any effect currently).
 
 More entities may be added in the future.
 
@@ -115,21 +122,34 @@ trigger:
 ### `birdbuddy.collect_postcard`
 
 "Finishes" a postcard sighting by adding the media to the associated species collections, thus making them available in the [Media Browser](#media).
+This is the same effect as opening and saving the postcard in the Bird Buddy app.
+
+> **Note**
+> 
+> This service _is not_ intended to be invoked manually, but should be used in conjunction with the
+> [`birdbuddy_new_postcard_sighting`](#birdbuddy_new_postcard_sighting) event, device trigger, or [Blueprint](#blueprint).
+>
+> Attempting to call the service manually will likely fail, because the service requires the `postcard` and `sighting` data that would be included
+> in the event.
 
 | Service attribute data  | Optional | Description                                                                                |
 | ----------------------- | -------- | ------------------------------------------------------------------------------------------ |
 | `postcard`              | No       | Postcard data from `birdbuddy_new_postcard_sighting` event                                 |
 | `sighting`              | No       | Sighting data from `birdbuddy_new_postcard_sighting` event                                 |
-| `strategy`              | Yes      | Strategy for resolving the sighting. One of `"recognized"`, `"best_guess"`, or `"mystery"` |
-| `best_guess_confidence` | Yes      | Minimum confidence to support `"best_guess"` strategy                                      |
+| `strategy`              | Yes      | Strategy for resolving the sighting (see strategies below, default: `recognized`)          |
+| `best_guess_confidence` | Yes      | Minimum confidence to support `"best_guess"` strategy (default: 10%)                       |
+| `share_media`           | Yes      | Whether the saved media will also be shared with the community (default: false)            |
 
 Postcard sighting strategies:
 
 - `recognized` (Default): collect the postcard only if Bird Buddy's AI identified a bird species. Note: the identified species may be incorrect.
-- `best_guess`: In the "can't decide which bird" sightings, a list of possible species is usually included. This strategy will select the
-highest-confidence species automatically (assuming that confidence is at least `best_guess_confidence`, defaults to 10%).
-<!-- * `mystery`: If the bird is not recognized and no species meets the confidence threshold, collect the sighting as a "Mystery Visitor".
-  NOTE: Mystery Visitor is not yet implemented. -->
+  Also note that any sighting not recognized by the Bird Buddy API will be *discarded*.
+- `best_guess`: In the "can't decide which bird" sightings, a list of possible species is usually included. This strategy will behave like
+  `recognized`, but if the species is not recognized it will select the highest-confidence species automatically (assuming that confidence is
+  at least `best_guess_confidence`, defaults to 10%). If none of the suggestions meet the `best_guess_confidence` strategy, the sighting will be
+  *discarded*.
+- `mystery`: Same behavior as `best_guess`, but if the bird is not recognized and no species meets the confidence threshold, collect the sighting
+  as a "Mystery Visitor".
 
 #### Automation example
 
@@ -137,14 +157,14 @@ highest-confidence species automatically (assuming that confidence is at least `
 trigger:
   - platform: event
     event_type: birdbuddy_new_postcard_sighting
-  # or device trigger:
+  # OR a device trigger:
   - platform: device
     domain: birdbuddy
     type: new_postcard
     # $ids...
 action:
   - service: birdbuddy.collect_postcard
-    data_template:
+    data:
       strategy: best_guess
       # pass-through these 2 event fields as they are
       postcard: "{{ trigger.event.data.postcard }}"
@@ -152,6 +172,9 @@ action:
 ```
 
 #### Blueprint
+
+To simplify the combination of the trigger and the action of collecting the postcard, you can import a predefined
+[Blueprint](https://www.home-assistant.io/docs/automation/using_blueprints/).
 
 To add the Blueprint, use the button below:
 
@@ -162,3 +185,7 @@ or go to **Settings** > **Automations & Scenes** > **Blueprints**, click the **I
 ```
 https://github.com/jhansche/ha-birdbuddy/blob/main/custom_components/birdbuddy/blueprints/collect_postcard.yaml
 ```
+
+After the Blueprint has been imported, you still need to
+[create an automation from that Blueprint](https://www.home-assistant.io/docs/automation/using_blueprints/#blueprint-automations). Also note that
+if we update the Blueprint here, your imported Blueprint will not automatically receive the update, and you may need to re-import it to get the update.
