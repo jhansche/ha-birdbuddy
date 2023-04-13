@@ -5,7 +5,6 @@ python-graphql-client==0.4.3
 -e git+https://github.com/jhansche/pybirdbuddy.git@main#egg=pybirdbuddy
 
 # for tests
-codecov==2.1.12
 coverage==7.0.5
 pytest==7.2.1
 pytest-cov==3.0.0
