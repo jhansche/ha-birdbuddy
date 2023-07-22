@@ -27,7 +27,10 @@ async def async_setup_entry(
     """Set up entities from a config entry."""
     coordinator = hass.data[DOMAIN][entry.entry_id]
     feeders = coordinator.feeders.values()
-    async_add_entities(BirdBuddyOffGridSwitch(f, coordinator) for f in feeders)
+    entities = []
+    entities.extend([BirdBuddyAudioSwitch(f, coordinator) for f in feeders])
+    entities.extend([BirdBuddyOffGridSwitch(f, coordinator) for f in feeders])
+    async_add_entities(entities)
 
 
 class BirdBuddyOffGridSwitch(BirdBuddyMixin, SwitchEntity):
@@ -63,6 +66,50 @@ class BirdBuddyOffGridSwitch(BirdBuddyMixin, SwitchEntity):
 
     async def async_turn_off(self, **kwargs: Any) -> None:
         result = await self.coordinator.client.toggle_off_grid(self.feeder, False)
+        if result:
+            self.feeder.update(result)
+            self.coordinator.async_update_listeners()
+
+
+class BirdBuddyAudioSwitch(BirdBuddyMixin, SwitchEntity):
+    """Audio switch"""
+
+    _attr_device_class = SwitchDeviceClass.SWITCH
+    _attr_entity_category = EntityCategory.CONFIG
+    _attr_name = "Audio"
+    _attr_icon = "mdi:microphone"
+    _attr_has_entity_name = True
+    _attr_translation_key = "audio_enabled"
+    coordinator: BirdBuddyDataUpdateCoordinator
+
+    def __init__(
+        self,
+        feeder: BirdBuddyDevice,
+        coordinator: BirdBuddyDataUpdateCoordinator,
+    ) -> None:
+        super().__init__(feeder, coordinator)
+        self._attr_unique_id = f"{self.feeder.id}-audio"
+
+    @property
+    def available(self) -> bool:
+        return super().available and self.feeder.is_owner
+
+    @property
+    def is_on(self) -> bool:
+        return self.feeder.is_audio_enabled
+
+    @property
+    def icon(self) -> str | None:
+        return "mdi:microphone" if self.is_on else "mdi:microphone-off"
+
+    async def async_turn_on(self, **kwargs: Any) -> None:
+        result = await self.coordinator.client.toggle_audio_enabled(self.feeder, True)
+        if result:
+            self.feeder.update(result)
+            self.coordinator.async_update_listeners()
+
+    async def async_turn_off(self, **kwargs: Any) -> None:
+        result = await self.coordinator.client.toggle_audio_enabled(self.feeder, False)
         if result:
             self.feeder.update(result)
             self.coordinator.async_update_listeners()

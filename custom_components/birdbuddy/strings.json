@@ -53,6 +53,11 @@
           "high": "High"
         }
       }
+    },
+    "switch": {
+      "audio_enabled": {
+        "name": "Audio Enabled"
+      }
     }
   },
   "device_automation": {

@@ -58,6 +58,11 @@
                     "medium": "Medium"
                 }
             }
+        },
+        "switch": {
+            "audio_enabled": {
+                "name": "Audio Enabled"
+            }
         }
     }
 }
