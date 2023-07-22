@@ -13,8 +13,7 @@ class BirdBuddyDevice(Feeder):
         return DeviceInfo(
             identifiers={(DOMAIN, self.id)},
             manufacturer=MANUFACTURER,
-            default_model="Bird Buddy",
-            default_name="Bird Buddy",
+            model="Bird Buddy", # TODO: use feeder.tier to determine model
             name=self.name,
             sw_version=self.get("firmwareVersion", None),
             suggested_area="Outside",
