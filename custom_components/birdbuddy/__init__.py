@@ -6,6 +6,7 @@ from birdbuddy.client import BirdBuddy
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import Platform, CONF_EMAIL, CONF_PASSWORD
 from homeassistant.core import HomeAssistant, ServiceCall
+import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers.typing import ConfigType
 
@@ -25,6 +26,8 @@ PLATFORMS: list[Platform] = [
     Platform.SWITCH,
     Platform.UPDATE,
 ]
+
+CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
