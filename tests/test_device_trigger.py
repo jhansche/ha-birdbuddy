@@ -1,5 +1,6 @@
 """The tests for Bird Buddy device triggers."""
 import pytest
+from pytest_unordered import unordered
 from homeassistant.components import automation
 from homeassistant.components.device_automation import (
     DeviceAutomationType,
@@ -11,7 +12,6 @@ from homeassistant.helpers import device_registry
 from homeassistant.setup import async_setup_component
 from pytest_homeassistant_custom_component.common import (
     MockConfigEntry,
-    assert_lists_same,
     async_get_device_automations,
 )
 
@@ -69,7 +69,7 @@ async def test_get_triggers(
     triggers = await async_get_device_automations(
         hass, DeviceAutomationType.TRIGGER, device_entry.id
     )
-    assert_lists_same(triggers, expected_triggers)
+    assert triggers == unordered(expected_triggers)
 
 
 async def test_fires_on_postcard_event(
