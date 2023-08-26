@@ -61,9 +61,11 @@ A device is created for each Bird Buddy feeder associated with the account. See 
 
 | Entity           | Entity Type     | Notes                                                                                                                                           |
 |------------------|-----------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
+| `Audio`          | `switch`        | Whether recorded visitor videos will include audio.                                                                                             |
 | `Battery`        | `sensor`        | Current Bird Buddy battery percentage                                                                                                           |
 | `Charging`       | `binary_sensor` | Whether the Bird Buddy is currently charging                                                                                                    |
 | `Off-Grid`       | `switch`        | Present and toggle Off-Grid status (owners only)                                                                                                |
+| `Power Profile`  | `select`        | Choose between Power Profile settings. NOTE: `FRENZY_MODE` appears to be a paid feature requiring an active payment subscription.               |
 | `Recent Visitor` | `sensor`        | State represents the most recent visitor's bird species name, and the `entity_picture` points to the cover media of that recent postcard visit. |
 | `State`          | `sensor`        | Current state (ready, offline, etc)                                                                                                             |
 | `Signal`         | `sensor`        | Current wifi signal (RSSI)                                                                                                                      |
@@ -72,8 +74,7 @@ A device is created for each Bird Buddy feeder associated with the account. See 
 Some entities are disabled or hidden by default, if they represent an advanced use case (for example,
 the "Signal" and "Recent Visitor" entities). There are also some entities that are disabled by
 default because the support is not yet enabled by the Bird Buddy API (for example, the Temperature
-and Food Level sensors are not yet enabled by Bird Buddy; and the "Frequency" setting does not appear
-to be have any effect currently).
+and Food Level sensors are not yet enabled by Bird Buddy).
 
 More entities may be added in the future.
 
@@ -125,7 +126,7 @@ trigger:
 This is the same effect as opening and saving the postcard in the Bird Buddy app.
 
 > **Note**
-> 
+>
 > This service _is not_ intended to be invoked manually, but should be used in conjunction with the
 > [`birdbuddy_new_postcard_sighting`](#birdbuddy_new_postcard_sighting) event, device trigger, or [Blueprint](#blueprint).
 >
