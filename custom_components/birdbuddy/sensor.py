@@ -4,8 +4,9 @@ from __future__ import annotations
 from collections.abc import Mapping
 from typing import Any
 
+from birdbuddy.birds import Species
 from birdbuddy.feed import FeedNodeType
-from birdbuddy.media import Collection, Media, is_media_expired
+from birdbuddy.media import Media, is_media_expired
 from birdbuddy.sightings import PostcardSighting
 
 from homeassistant.components.sensor import (
@@ -115,7 +116,6 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
     _attr_name = "Recent Visitor"
     _attr_extra_state_attributes = {}
 
-    _latest_collection: Collection | None = None
     _latest_media: Media | None = None
 
     def __init__(
@@ -131,9 +131,11 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
 
         @callback
         def filter_my_postcards(event: Event) -> bool:
-            return self.feeder.id == event.data.get("sighting", {}).get(
-                "feeder", {}
-            ).get("id")
+            # FIXME: This signature changed in 2024.4
+            data = event if callable(getattr(event, "get", None)) else event.data
+            return self.feeder.id == (
+                data.get("sighting", {}).get("feeder", {}).get("id")
+            )
 
         self.async_on_remove(
             self.hass.bus.async_listen(
@@ -184,7 +186,6 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
             # Else, select one that has a list of suggestions
             suggested = guessable[0].suggestions[0]
             self._attr_native_value = suggested.species.name
-            self._latest_collection = suggested
             LOGGER.info(
                 "Reporting recent visitor from unrecognized suggestion: %s", suggested
             )
@@ -198,24 +199,34 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
 
     async def _update_latest_visitor(self) -> None:
         feed = await self.coordinator.client.feed()
+
         items = feed.filter(
-            of_type=[FeedNodeType.SpeciesSighting, FeedNodeType.SpeciesUnlocked]
+            of_type=[
+                FeedNodeType.SpeciesSighting,
+                FeedNodeType.SpeciesUnlocked,
+                FeedNodeType.CollectedPostcard,
+            ],
         )
+
         my_items = [
-            item
+            item | {"media": next(iter(medias), None)}
             for item in items
             if item
-            and item.get("media")
-            and item.get("collection")  # collection=None if it's been removed
-            and (self.feeder.id in item["media"].get("thumbnailUrl", ""))
-            and (item["collection"].get("species", None))
+            and (
+                medias := [
+                    m
+                    for m in item.get("medias")
+                    if m.get("__typename") == "MediaImage"
+                    and self.feeder.id in m.get("thumbnailUrl", "")
+                ]
+            )
+            and item.get("species", None)
         ]
 
         if latest := max(my_items, default=None, key=lambda x: x.created_at):
             self._latest_media = Media(latest["media"])
-            self._latest_collection = Collection(latest["collection"])
-
-            self._attr_native_value = self._latest_collection.species.name
+            species = [Species(s).name for s in latest.get("species", [])]
+            self._attr_native_value = next(iter(species), None)
             self._attr_entity_picture = self._latest_media.thumbnail_url
             self.async_write_ha_state()
 
@@ -234,10 +245,6 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
                 return picture
             self._latest_media = None
 
-        if self._latest_collection:
-            picture = self._latest_collection.cover_media.content_url
-            if not is_media_expired(picture):
-                return picture
         return None
 
     @property
@@ -245,9 +252,6 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
         if attr := super().native_value:
             # Postcard listener set the attribute directly, use it
             return attr
-        if self._latest_collection:
-            # If not set, get the most recent collection
-            return self._latest_collection.bird_name
         return None
 
 
