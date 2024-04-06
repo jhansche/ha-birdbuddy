@@ -60,6 +60,10 @@ class BirdBuddyPowerProfileSelector(BirdBuddyMixin, SelectEntity):
     def current_option(self) -> str | None:
         return self.feeder.power_profile.value.lower()
 
+    @property
+    def available(self) -> bool:
+        return super().available and self.feeder.is_owner
+
     async def async_select_option(self, option: str) -> None:
         option = PowerProfile(option.upper())
         assert option != PowerProfile.UNKNOWN
