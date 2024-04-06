@@ -131,9 +131,11 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
 
         @callback
         def filter_my_postcards(event: Event) -> bool:
-            return self.feeder.id == event.data.get("sighting", {}).get(
-                "feeder", {}
-            ).get("id")
+            # FIXME: This signature changed in 2024.4
+            data = event if callable(getattr(event, "get", None)) else event.data
+            return self.feeder.id == (
+                data.get("sighting", {}).get("feeder", {}).get("id")
+            )
 
         self.async_on_remove(
             self.hass.bus.async_listen(
