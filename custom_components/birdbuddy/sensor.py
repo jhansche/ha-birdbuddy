@@ -201,7 +201,11 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
     async def _update_latest_visitor(self) -> None:
         feed = await self.coordinator.client.feed()
         items = feed.filter(
-            of_type=[FeedNodeType.SpeciesSighting, FeedNodeType.SpeciesUnlocked]
+            of_type=[
+                FeedNodeType.SpeciesSighting,
+                FeedNodeType.SpeciesUnlocked,
+                FeedNodeType.CollectedPostcard,
+            ],
         )
         my_items = [
             item
