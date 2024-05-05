@@ -215,7 +215,7 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
             and (
                 medias := [
                     m
-                    for m in item.get("medias")
+                    for m in item.get("medias", [])
                     if m.get("__typename") == "MediaImage"
                     and self.feeder.id in m.get("thumbnailUrl", "")
                 ]
