@@ -4,8 +4,6 @@
 python-graphql-client==0.4.3
 -e git+https://github.com/jhansche/pybirdbuddy.git@main#egg=pybirdbuddy
 
-numpy>=1.26.4
-
 # for tests
 coverage==7.5.0
 pytest==8.2.0
