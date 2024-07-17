@@ -12,6 +12,6 @@ pytest==8.2.0
 pytest-cov==5.0.0
 pytest-aiohttp==1.0.5
 pytest-asyncio==0.23.6
-pytest-unordered==0.5.2
+pytest-unordered==0.6.0
 py==1.10.0  # Fixes pytest-sugar 0.9.5
 pytest-homeassistant-custom-component==0.13.132
