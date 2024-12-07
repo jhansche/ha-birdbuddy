@@ -1,4 +1,5 @@
 """The Bird Buddy integration."""
+
 from __future__ import annotations
 
 from birdbuddy.client import BirdBuddy
@@ -21,6 +22,7 @@ from .util import _find_coordinator_by_feeder
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
+    Platform.IMAGE,
     Platform.SELECT,
     Platform.SENSOR,
     Platform.SWITCH,

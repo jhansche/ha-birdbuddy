@@ -1,5 +1,7 @@
 """Bird Buddy utilities"""
 
+from birdbuddy.feed import FeedNode
+
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.helpers import (
@@ -58,3 +60,20 @@ def _find_coordinator_by_device(
         )
     coordinator: BirdBuddyDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
     return coordinator
+
+
+def _find_media_with_species(feeder_id: str, items: list[FeedNode]) -> list[FeedNode]:
+    return [
+        item | {"media": next(iter(medias), None)}
+        for item in items
+        if item
+        and (
+            medias := [
+                m
+                for m in item.get("medias", [])
+                if m.get("__typename") == "MediaImage"
+                and feeder_id in m.get("thumbnailUrl", "")
+            ]
+        )
+        and item.get("species", None)
+    ]

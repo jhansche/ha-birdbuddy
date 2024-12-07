@@ -30,6 +30,7 @@ from .const import DOMAIN, EVENT_NEW_POSTCARD_SIGHTING, LOGGER
 from .coordinator import BirdBuddyDataUpdateCoordinator
 from .entity import BirdBuddyMixin
 from .device import BirdBuddyDevice
+from .util import _find_media_with_species
 
 
 async def async_setup_entry(
@@ -161,7 +162,6 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
         if media:
             self._latest_media = media
             self._attr_entity_picture = media.content_url
-            # self._attr_extra_state_attributes["last_visit"] = media.created_at
 
         if unlocked := [
             s for s in postcard.report.sightings if s.sighting_type.is_unlocked
@@ -208,20 +208,7 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
             ],
         )
 
-        my_items = [
-            item | {"media": next(iter(medias), None)}
-            for item in items
-            if item
-            and (
-                medias := [
-                    m
-                    for m in item.get("medias", [])
-                    if m.get("__typename") == "MediaImage"
-                    and self.feeder.id in m.get("thumbnailUrl", "")
-                ]
-            )
-            and item.get("species", None)
-        ]
+        my_items = _find_media_with_species(self.feeder.id, items)
 
         if latest := max(my_items, default=None, key=lambda x: x.created_at):
             self._latest_media = Media(latest["media"])
