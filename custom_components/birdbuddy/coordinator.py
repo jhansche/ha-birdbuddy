@@ -1,15 +1,18 @@
 """Data Update coordinator for Bird Buddy."""
 
 from __future__ import annotations
+from collections.abc import Callable
 
 from birdbuddy.client import BirdBuddy
 from birdbuddy.feed import FeedNode, FeedNodeType
-from birdbuddy.media import Collection
+from birdbuddy.feeder import Feeder
+from birdbuddy.media import Collection, Media
 from birdbuddy.sightings import PostcardSighting, SightingFinishStrategy
 
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, EventOrigin
 from homeassistant.helpers.update_coordinator import (
+    CALLBACK_TYPE,
     DataUpdateCoordinator,
     UpdateFailed,
 )
@@ -21,6 +24,7 @@ from .const import (
 )
 
 from .device import BirdBuddyDevice
+from .visitors import RecentVisitors, VisitorCallback
 
 
 class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
@@ -29,6 +33,7 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
     config_entry: ConfigEntry
     client: BirdBuddy
     feeders: dict[str, BirdBuddyDevice]
+    visitors: dict[str, RecentVisitors]
 
     def __init__(
         self,
@@ -38,6 +43,7 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
     ) -> None:
         self.client = client
         self.feeders = {}
+        self.visitors = {}
         self.first_update = True
         super().__init__(
             hass,
@@ -45,6 +51,14 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
             name=DOMAIN,
             update_interval=POLLING_INTERVAL,
         )
+
+    def add_visitor_listener(
+        self, feeder: Feeder, listener: VisitorCallback
+    ) -> CALLBACK_TYPE:
+        """Register a callback to be called when a new visitor is detected."""
+        if feeder.id not in self.visitors:
+            self.visitors[feeder.id] = RecentVisitors(feeder, self.client, self.hass)
+        return self.visitors[feeder.id].register_callback(listener)
 
     async def _process_feed(self, feed: list[FeedNode]) -> bool:
         """Attempt to process new feed items.

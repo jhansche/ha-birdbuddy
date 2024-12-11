@@ -31,6 +31,7 @@ from .coordinator import BirdBuddyDataUpdateCoordinator
 from .entity import BirdBuddyMixin
 from .device import BirdBuddyDevice
 from .util import _find_media_with_species
+from .visitors import RecentVisitors
 
 
 async def async_setup_entry(
@@ -129,93 +130,12 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
 
     async def async_added_to_hass(self) -> None:
         await super().async_added_to_hass()
-
-        @callback
-        def filter_my_postcards(event: Event) -> bool:
-            # FIXME: This signature changed in 2024.4
-            data = event if callable(getattr(event, "get", None)) else event.data
-            return self.feeder.id == (
-                data.get("sighting", {}).get("feeder", {}).get("id")
-            )
-
         self.async_on_remove(
-            self.hass.bus.async_listen(
-                EVENT_NEW_POSTCARD_SIGHTING,
-                self._on_new_postcard,
-                event_filter=filter_my_postcards,
+            self.coordinator.add_visitor_listener(
+                self.feeder,
+                self._on_recent_visitor,
             )
         )
-
-        await self._update_latest_visitor()
-
-    async def _on_new_postcard(self, event: Event | None = None) -> None:
-        """ """
-        postcard = PostcardSighting(event.data["sighting"])
-
-        assert postcard.report.sightings
-        assert postcard.medias
-
-        # media has created_at
-        # but sightings[] does not.
-        media = next(iter(postcard.medias), None)
-
-        if media:
-            self._latest_media = media
-            self._attr_entity_picture = media.content_url
-
-        if unlocked := [
-            s for s in postcard.report.sightings if s.sighting_type.is_unlocked
-        ]:
-            # NOTE: this might not be correct - if one sighting has multiple recognized
-            # species, and one unlocked species, it's highly probably that the one unlocked
-            # species is a mis-identification!
-            # It's a little unusual for a single sighting to contain multiple bird species.
-            self._attr_native_value = unlocked[0].species.name
-            LOGGER.debug(
-                "Reporting recent visitor from unlocked: %s", self._attr_native_value
-            )
-        elif recognized := [
-            s for s in postcard.report.sightings if s.sighting_type.is_recognized
-        ]:
-            # Next best, select a recognized species
-            self._attr_native_value = recognized[0].species.name
-            LOGGER.debug(
-                "Reporting recent visitor from recognized: %s", self._attr_native_value
-            )
-        elif guessable := [s for s in postcard.report.sightings if s.suggestions]:
-            # Else, select one that has a list of suggestions
-            suggested = guessable[0].suggestions[0]
-            self._attr_native_value = suggested.species.name
-            LOGGER.info(
-                "Reporting recent visitor from unrecognized suggestion: %s", suggested
-            )
-        else:
-            # We don't know what it was. Instead of reporting a bogus "cannot decide"
-            # type, just clear the value.
-            self._attr_native_value = None
-            LOGGER.info("Cannot decide species: %s", postcard.report.sightings[0])
-
-        self.async_write_ha_state()
-
-    async def _update_latest_visitor(self) -> None:
-        feed = await self.coordinator.client.feed()
-
-        items = feed.filter(
-            of_type=[
-                FeedNodeType.SpeciesSighting,
-                FeedNodeType.SpeciesUnlocked,
-                FeedNodeType.CollectedPostcard,
-            ],
-        )
-
-        my_items = _find_media_with_species(self.feeder.id, items)
-
-        if latest := max(my_items, default=None, key=lambda x: x.created_at):
-            self._latest_media = Media(latest["media"])
-            species = [Species(s).name for s in latest.get("species", [])]
-            self._attr_native_value = next(iter(species), None)
-            self._attr_entity_picture = self._latest_media.thumbnail_url
-            self.async_write_ha_state()
 
     @property
     def entity_picture(self) -> str | None:
@@ -240,6 +160,17 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
             # Postcard listener set the attribute directly, use it
             return attr
         return None
+
+    @callback
+    def _on_recent_visitor(self, visitors: RecentVisitors) -> None:
+        media = visitors.latest_media
+        species = visitors.latest_species
+        if media:
+            self._latest_media = media
+            self._attr_entity_picture = media.content_url
+        if species:
+            self._attr_native_value = species.name
+        self.async_write_ha_state()
 
 
 class BirdBuddyStateEntity(BirdBuddyMixin, SensorEntity):
