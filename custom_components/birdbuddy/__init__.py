@@ -18,7 +18,7 @@ from .const import (
     SERVICE_SCHEMA_COLLECT_POSTCARD,
 )
 from .coordinator import BirdBuddyDataUpdateCoordinator
-from .util import _find_coordinator_by_feeder
+from .hass_util import _find_coordinator_by_feeder
 
 PLATFORMS: list[Platform] = [
     Platform.BINARY_SENSOR,
