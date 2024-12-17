@@ -80,6 +80,7 @@ class BirdBuddyRecentVisitorImageEntity(BirdBuddyMixin, ImageEntity):
             self._attr_image_url = url
             self._attr_image_last_updated = created_at
             self._attr_entity_picture = url
+            self._cached_image = None
         elif (url := self.image_url) and url is not UNDEFINED and is_media_expired(url):
             # Clear it
             self._attr_image_url = None
