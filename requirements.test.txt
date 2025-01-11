@@ -5,7 +5,11 @@ python-graphql-client==0.4.3
 -e git+https://github.com/jhansche/pybirdbuddy.git@main#egg=pybirdbuddy
 
 # for tests
-pytest-homeassistant-custom-component==0.13.128
+# For Python 3.12 and above
+pytest-homeassistant-custom-component==0.13.128; python_version >= '3.12'
+
+# For Python 3.11
+pytest-homeassistant-custom-component==0.13.42; python_version < '3.12'
 
 coverage
 pytest
