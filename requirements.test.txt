@@ -17,4 +17,5 @@ pytest-cov
 pytest-aiohttp
 pytest-asyncio
 pytest-unordered
-py==1.10.0  # Fixes pytest-sugar 0.9.5
+py
+propcache
