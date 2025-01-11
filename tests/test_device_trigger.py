@@ -105,9 +105,8 @@ async def test_does_not_fire_on_postcard_event_for_other_feeder(hass, calls):
 
 async def test_config_schema(hass, device_reg):
     """Test we get the expected triggers from a birdbuddy."""
-    config_entry = MockConfigEntry(domain="birdbuddy", data={})
+    config_entry = MockConfigEntry(domain="birdbuddy", data={}, state=ConfigEntryState.LOADED)
     config_entry.add_to_hass(hass)
-    config_entry.state = ConfigEntryState.LOADED
     device_entry = device_reg.async_get_or_create(
         config_entry_id=config_entry.entry_id,
         identifiers={(DOMAIN, "feeder1")},
@@ -125,9 +124,8 @@ async def test_config_schema(hass, device_reg):
 
 async def test_config_schema_no_coordinator(hass, device_reg):
     """Test we get the expected triggers from a birdbuddy."""
-    config_entry = MockConfigEntry(domain="birdbuddy", data={})
+    config_entry = MockConfigEntry(domain="birdbuddy", data={}, state=ConfigEntryState.LOADED)
     config_entry.add_to_hass(hass)
-    config_entry.state = ConfigEntryState.LOADED
     device_entry = device_reg.async_get_or_create(
         config_entry_id=config_entry.entry_id,
         identifiers={(DOMAIN, "feeder1")},
