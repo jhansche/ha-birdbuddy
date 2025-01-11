@@ -1,4 +1,5 @@
 """Provides device triggers for Bird Buddy."""
+
 from __future__ import annotations
 
 from typing import Any
@@ -27,7 +28,7 @@ from .const import (
     EVENT_NEW_POSTCARD_SIGHTING,
     TRIGGER_TYPE_POSTCARD,
 )
-from .util import (
+from .hass_util import (
     _find_coordinator_by_device,
     _feeder_id_for_device,
 )
