@@ -1,28 +1,21 @@
 """Data Update coordinator for Bird Buddy."""
 
 from __future__ import annotations
-from collections.abc import Callable
 
 from birdbuddy.client import BirdBuddy
 from birdbuddy.feed import FeedNode, FeedNodeType
 from birdbuddy.feeder import Feeder
-from birdbuddy.media import Collection, Media
+from birdbuddy.media import Collection
 from birdbuddy.sightings import PostcardSighting, SightingFinishStrategy
-
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, EventOrigin
+from homeassistant.core import EventOrigin, HomeAssistant
 from homeassistant.helpers.update_coordinator import (
     CALLBACK_TYPE,
     DataUpdateCoordinator,
     UpdateFailed,
 )
-from .const import (
-    DOMAIN,
-    EVENT_NEW_POSTCARD_SIGHTING,
-    LOGGER,
-    POLLING_INTERVAL,
-)
 
+from .const import DOMAIN, EVENT_NEW_POSTCARD_SIGHTING, LOGGER, POLLING_INTERVAL
 from .device import BirdBuddyDevice
 from .visitors import RecentVisitors, VisitorCallback
 
@@ -41,6 +34,7 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
         client: BirdBuddy,
         entry: ConfigEntry,
     ) -> None:
+        """Initialize the BirdBuddy data coordinator."""
         self.client = client
         self.feeders = {}
         self.visitors = {}
@@ -142,11 +136,11 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
         return self.client
 
     async def handle_collect_postcard(self, data: dict[str, any]) -> bool:
-        """Handles the `birdbuddy.collect_postcard` service call."""
+        """Handle the `birdbuddy.collect_postcard` service call."""
         sighting = PostcardSighting(data["sighting"])
         postcard_id = data["postcard"]["id"]
         strategy = SightingFinishStrategy(data.get("strategy", "recognized"))
-        confidence = data.get("best_guess_confidence", None)
+        confidence = data.get("best_guess_confidence")
         share_media = data.get("share_media", False)
 
         LOGGER.debug(
