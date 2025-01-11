@@ -21,9 +21,8 @@ async def test_setup_entry(hass: HomeAssistant):
         "email": "test@email.com",
         "password": "test-password",
     }
-    config_entry = MockConfigEntry(domain="birdbuddy", data=config)
+    config_entry = MockConfigEntry(domain="birdbuddy", data=config, state=ConfigEntryState.NOT_LOADED)
     config_entry.add_to_hass(hass)
-    config_entry.state = ConfigEntryState.NOT_LOADED
 
     with patch(
         "birdbuddy.client.BirdBuddy.refresh",
@@ -44,9 +43,8 @@ async def test_setup_entry_no_feeders(hass: HomeAssistant):
         "email": "test@email.com",
         "password": "test-password",
     }
-    config_entry = MockConfigEntry(domain="birdbuddy", data=config)
+    config_entry = MockConfigEntry(domain="birdbuddy", data=config, state=ConfigEntryState.NOT_LOADED)
     config_entry.add_to_hass(hass)
-    config_entry.state = ConfigEntryState.NOT_LOADED
 
     with patch(
         "birdbuddy.client.BirdBuddy.refresh",
@@ -64,9 +62,8 @@ async def test_setup_entry_refresh_fails(hass: HomeAssistant):
         "email": "test@email.com",
         "password": "test-password",
     }
-    config_entry = MockConfigEntry(domain="birdbuddy", data=config)
+    config_entry = MockConfigEntry(domain="birdbuddy", data=config, state=ConfigEntryState.NOT_LOADED)
     config_entry.add_to_hass(hass)
-    config_entry.state = ConfigEntryState.NOT_LOADED
 
     with patch(
         "birdbuddy.client.BirdBuddy.refresh",
