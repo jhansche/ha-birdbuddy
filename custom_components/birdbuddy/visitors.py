@@ -55,7 +55,7 @@ class RecentVisitors:
         if self._latest_media and not is_media_expired(
             self._latest_media.content_url or self._latest_media.thumbnail_url
         ):
-            listener(self._latest_media)
+            listener(self)
         self._listeners.add(listener)
         return lambda: self.unregister_callback(listener)
 
