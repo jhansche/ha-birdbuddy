@@ -7,7 +7,6 @@ from birdbuddy.birds import Species
 from birdbuddy.client import BirdBuddy
 from birdbuddy.feed import FeedNodeType
 from birdbuddy.feeder import Feeder
-from birdbuddy.media import Media
 from birdbuddy.media import Media, is_media_expired
 from birdbuddy.sightings import PostcardSighting
 
