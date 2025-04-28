@@ -110,7 +110,7 @@ class RecentVisitors:
             LOGGER.debug(
                 "Setting recent visitor on %s from feed: %s, %s: %s",
                 self.feeder.name,
-                self._latest_species.name,
+                self._latest_species.name if self._latest_species else "Unknown species",
                 self._latest_media.created_at,
                 self._latest_media.content_url,
             )
