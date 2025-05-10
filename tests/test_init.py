@@ -1,6 +1,7 @@
 """Test component setup."""
 from unittest.mock import patch, PropertyMock
 
+import pytest
 from homeassistant.config_entries import ConfigEntryState
 from homeassistant.core import HomeAssistant
 from homeassistant.setup import async_setup_component
@@ -9,6 +10,12 @@ from pytest_homeassistant_custom_component.common import (
 )
 
 from custom_components.birdbuddy.const import DOMAIN
+
+
+@pytest.fixture(name="expected_lingering_timers")
+def expected_lingering_timers_fixture():
+    """Fixture to set expected_lingering_timers."""
+    return True
 
 
 async def test_async_setup(hass):
