@@ -1,7 +1,11 @@
 """The Bird Buddy image entity."""
 
 from birdbuddy.media import Media, is_media_expired
-from homeassistant.components.image import UNDEFINED, ImageEntity
+from homeassistant.components.image import (
+    UNDEFINED,
+    ImageEntity,
+    Image,
+)
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
@@ -49,6 +53,18 @@ class BirdBuddyRecentVisitorImageEntity(BirdBuddyMixin, ImageEntity):
     def image(self) -> bytes | None:
         """Return the image bytes."""
         # See async_image()
+        return None
+
+    async def _async_load_image_from_url(self, url: str) -> Image | None:
+        """Load an image by url."""
+        # Override the parent because cloudfront is returning text/plain
+        # and HA requires image/*
+        # If there's an HTTP error, fetch_url will still raise that.
+        if response := await self._fetch_url(url):
+            return Image(
+                content=response.content,
+                content_type="image/jpeg",
+            )
         return None
 
     async def async_added_to_hass(self) -> None:
