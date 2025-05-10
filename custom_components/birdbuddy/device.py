@@ -1,4 +1,5 @@
 """Bird Buddy device"""
+
 from homeassistant.helpers.entity import DeviceInfo
 from birdbuddy.feeder import Feeder
 from .const import DOMAIN, MANUFACTURER
@@ -13,7 +14,7 @@ class BirdBuddyDevice(Feeder):
         return DeviceInfo(
             identifiers={(DOMAIN, self.id)},
             manufacturer=MANUFACTURER,
-            model="Bird Buddy", # TODO: use feeder.tier to determine model
+            model="Bird Buddy",  # TODO: use feeder.tier to determine model
             name=self.name,
             sw_version=self.get("firmwareVersion", None),
             suggested_area="Outside",

@@ -170,7 +170,7 @@ class BirdBuddyMediaSource(MediaSource):
         base = self._build_media_collection(config, collection)
         base.children = []
         medias = await coordinator.client.collection(collection.collection_id)
-        for (media_id, media) in medias.items():
+        for media_id, media in medias.items():
             relative_title = _best_timedelta_title(media.created_at, dt_util.utcnow())
             base.children.append(
                 BrowseMediaSource(

@@ -125,7 +125,9 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
         if not self.client.feeders:
             raise UpdateFailed("No Feeders found")
 
-        feeders = {id: BirdBuddyDevice(f) for (id, f) in self.client.feeders.items()}  # noqa: A001
+        feeders = {
+            id: BirdBuddyDevice(f) for (id, f) in self.client.feeders.items()
+        }  # noqa: A001
         # pylint: disable=invalid-name
         for i, f in feeders.items():
             if i in self.feeders:
