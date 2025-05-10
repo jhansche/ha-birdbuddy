@@ -56,10 +56,17 @@ class BirdBuddyRecentVisitorImageEntity(BirdBuddyMixin, ImageEntity):
         return None
 
     async def _async_load_image_from_url(self, url: str) -> Image | None:
-        """Load an image by url."""
-        # Override the parent because cloudfront is returning text/plain
-        # and HA requires image/*
-        # If there's an HTTP error, fetch_url will still raise that.
+        """
+        Load an image by URL, ensuring compatibility with Home Assistant.
+
+        This method overrides the parent implementation because cloudfront
+        sometimes returns a `text/plain` content type for image data, which
+        is incompatible with Home Assistant's requirement for `image/*`.
+        To address this, the content type is explicitly set to `image/jpeg`.
+
+        If there's an HTTP error, `fetch_url` will still raise the appropriate
+        exception.
+        """
         if response := await self._fetch_url(url):
             return Image(
                 content=response.content,
