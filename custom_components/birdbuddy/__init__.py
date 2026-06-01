@@ -5,7 +5,7 @@ from __future__ import annotations
 from birdbuddy.client import BirdBuddy
 
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.const import Platform, CONF_EMAIL, CONF_PASSWORD
+from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, Platform
 from homeassistant.core import HomeAssistant, ServiceCall
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.device_registry import DeviceEntry
@@ -33,9 +33,10 @@ CONFIG_SCHEMA = cv.config_entry_only_config_schema(DOMAIN)
 
 
 async def async_setup(hass: HomeAssistant, config: ConfigType) -> bool:
-    """Setup the integration"""
+    """Setup the integration."""
     # This will register the services even if there's no ConfigEntry yet...
-    _setup_services(hass)
+    if not hass.services.has_service(DOMAIN, SERVICE_COLLECT_POSTCARD):
+        _setup_services(hass)
     return True
 
 
@@ -84,7 +85,7 @@ async def async_remove_config_entry_device(
 
 
 def _setup_services(hass: HomeAssistant) -> bool:
-    """Register the BirdBuddy service(s)"""
+    """Register the BirdBuddy service(s)."""
 
     async def handle_collect_postcard(service: ServiceCall) -> None:
         feeder_id = service.data["sighting"]["feeder"]["id"]
