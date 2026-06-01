@@ -1,6 +1,7 @@
 """Test the Bird Buddy config flow."""
 from unittest.mock import ANY, patch
 
+import aiohttp
 from birdbuddy.sightings import SightingFinishStrategy
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.setup import async_setup_component
@@ -25,9 +26,13 @@ async def test_services(hass):  # , config_entry):
     config_entry.add_to_hass(hass)
 
     # config_entry.add_to_hass(hass)
-    assert await async_setup_component(
-        hass, DOMAIN, {CONF_EMAIL: "test@email", CONF_PASSWORD: "passw0rd"}
-    )
+    with patch(
+        "birdbuddy.client.BirdBuddy.refresh",
+        side_effect=aiohttp.ClientConnectionError("Offline"),
+    ):
+        assert await async_setup_component(
+            hass, DOMAIN, {CONF_EMAIL: "test@email", CONF_PASSWORD: "passw0rd"}
+        )
 
     # Schema is checked in layers: empty object raises missing top-level keys
     with pytest.raises(MultipleInvalid) as exc_info:
