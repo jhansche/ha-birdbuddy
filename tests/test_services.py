@@ -10,6 +10,7 @@ from pytest_homeassistant_custom_component.common import (
 )
 from voluptuous.error import MultipleInvalid
 
+from custom_components.birdbuddy import async_unload_entry
 from custom_components.birdbuddy.const import (
     DOMAIN,
     SERVICE_COLLECT_POSTCARD,
@@ -129,3 +130,5 @@ async def test_services(hass):  # , config_entry):
             confidence_threshold=7,
             share_media=True,
         )
+
+    assert await async_unload_entry(hass, config_entry)
