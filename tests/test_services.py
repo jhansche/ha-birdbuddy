@@ -57,6 +57,23 @@ async def test_services(hass):
             SERVICE_COLLECT_POSTCARD,
             {
                 "sighting": {"sightingReport": {}, "feeder": {}},
+                "postcard": {},
+            },
+            blocking=True,
+        )
+    assert len(exc_info.value.errors) == 1
+    msgs = [str(e) for e in exc_info.value.errors]
+    assert (
+        "must contain at least one of id. for dictionary value @ data['postcard']"
+        in msgs
+    )
+
+    with pytest.raises(MultipleInvalid) as exc_info:
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_COLLECT_POSTCARD,
+            {
+                "sighting": {"sightingReport": {}, "feeder": {}},
                 "postcard": {"id": "feed item id"},
             },
             blocking=True,
