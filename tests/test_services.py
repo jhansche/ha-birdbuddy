@@ -42,10 +42,14 @@ async def test_services(hass):
             },
             blocking=True,
         )
-    assert len(exc_info.value.errors) == 2
+    assert len(exc_info.value.errors) == 3
     msgs = [str(e) for e in exc_info.value.errors]
     assert "required key not provided @ data['sighting']['sightingReport']" in msgs
     assert "required key not provided @ data['sighting']['feeder']" in msgs
+    assert (
+        "must contain at least one of id. for dictionary value @ data['postcard']"
+        in msgs
+    )
 
     with pytest.raises(MultipleInvalid) as exc_info:
         await hass.services.async_call(
