@@ -12,6 +12,14 @@ from pytest_homeassistant_custom_component.common import (
 from custom_components.birdbuddy.const import DOMAIN
 
 
+class MockFeed:
+    """Minimal feed stub for RecentVisitors startup refresh."""
+
+    def filter(self, of_type=None):
+        """Return no feed items."""
+        return []
+
+
 @pytest.fixture(name="expected_lingering_timers")
 def expected_lingering_timers_fixture():
     """Fixture to set expected_lingering_timers."""
@@ -41,6 +49,12 @@ async def test_setup_entry(hass: HomeAssistant):
         "birdbuddy.client.BirdBuddy.feeders",
         new_callable=PropertyMock,
         return_value={"feeder1": {"id": "feeder1", "name": "Test Feeder"}}
+    ), patch(
+        "birdbuddy.client.BirdBuddy.feed",
+        return_value=MockFeed(),
+    ), patch(
+        "birdbuddy.client.BirdBuddy.refresh_collections",
+        return_value={},
     ):
         assert await hass.config_entries.async_setup(config_entry.entry_id)
 
