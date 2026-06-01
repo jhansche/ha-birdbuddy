@@ -1,5 +1,5 @@
 """Test component setup."""
-from unittest.mock import patch, PropertyMock
+from unittest.mock import AsyncMock, MagicMock, PropertyMock, patch
 
 import pytest
 from homeassistant.config_entries import ConfigEntryState
@@ -31,6 +31,9 @@ async def test_setup_entry(hass: HomeAssistant):
     config_entry = MockConfigEntry(domain="birdbuddy", data=config, state=ConfigEntryState.NOT_LOADED)
     config_entry.add_to_hass(hass)
 
+    mock_feed = MagicMock()
+    mock_feed.filter.return_value = []
+
     with patch(
         "birdbuddy.client.BirdBuddy.refresh",
         return_value=True,
@@ -41,8 +44,17 @@ async def test_setup_entry(hass: HomeAssistant):
         "birdbuddy.client.BirdBuddy.feeders",
         new_callable=PropertyMock,
         return_value={"feeder1": {"id": "feeder1", "name": "Test Feeder"}}
+    ), patch(
+        "birdbuddy.client.BirdBuddy.feed",
+        new_callable=AsyncMock,
+        return_value=mock_feed,
+    ), patch(
+        "birdbuddy.client.BirdBuddy.refresh_collections",
+        new_callable=AsyncMock,
+        return_value={},
     ):
         assert await hass.config_entries.async_setup(config_entry.entry_id)
+        await hass.async_block_till_done()
 
 
 async def test_setup_entry_no_feeders(hass: HomeAssistant):
