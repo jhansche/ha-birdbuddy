@@ -23,6 +23,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
+          rm -rf src/pybirdbuddy
           pip install -r requirements.test.txt
 
       - name: Run pytest
