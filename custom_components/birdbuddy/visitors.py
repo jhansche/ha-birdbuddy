@@ -1,8 +1,7 @@
 """Helpers for managing recent visitors."""
 
-from asyncio import CancelledError, Task
-from collections.abc import Callable
 from typing import TypeVar
+from collections.abc import Callable
 
 from birdbuddy.birds import Species
 from birdbuddy.client import BirdBuddy
@@ -36,7 +35,6 @@ class RecentVisitors:
         self.feeder = feeder
         self._listeners: set[VisitorCallback] = set()
         self._disposable: Callable[[], None] | None = None
-        self._startup_task: Task[None] | None = None
         self._latest_media: Media | None = None
         self._latest_species: Species | None = None
 
@@ -69,9 +67,6 @@ class RecentVisitors:
 
     def _stop(self) -> None:
         """Stop listening for new postcards."""
-        if self._startup_task and not self._startup_task.done():
-            self._startup_task.cancel()
-
         if self._disposable:
             self._disposable()
             self._disposable = None
@@ -88,27 +83,12 @@ class RecentVisitors:
             )
 
         LOGGER.info("Listening for new visitors to feeder %s", self.feeder.name)
-        self._startup_task = self.hass.async_create_task(
-            self._safe_update_latest_visitor()
-        )
+        self.hass.add_job(self._update_latest_visitor)
         return self.hass.bus.async_listen(
             EVENT_NEW_POSTCARD_SIGHTING,
             self._on_new_postcard,
             event_filter=filter_my_postcards,
         )
-
-    async def _safe_update_latest_visitor(self) -> None:
-        """Update the latest visitor without leaking task exceptions."""
-        try:
-            await self._update_latest_visitor()
-        except CancelledError:
-            raise
-        except Exception:
-            LOGGER.exception(
-                "Failed to update latest visitor for feeder %s", self.feeder.name
-            )
-        finally:
-            self._startup_task = None
 
     async def _update_latest_visitor(self) -> None:
         feed = await self.client.feed()
