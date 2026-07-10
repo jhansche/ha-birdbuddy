@@ -203,9 +203,9 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
                     raise
                 LOGGER.warning(
                     "Error checking update progress; will try again (%d/%d): %s",
-                    exc,
                     errors,
                     MAX_ERRORS,
+                    exc,
                 )
 
             self.__update_state = result

@@ -44,8 +44,10 @@ def _find_coordinator_by_feeder(
     Returns:
         The first coordinator tracking the feeder, or None if none does.
     """
+    # Services register in async_setup, so this can run before any config
+    # entry has populated hass.data[DOMAIN].
     coordinators: list[BirdBuddyDataUpdateCoordinator] = list(
-        hass.data[DOMAIN].values()
+        hass.data.get(DOMAIN, {}).values()
     )
     return next((c for c in coordinators if feeder_id in c.feeders), None)
 
@@ -73,16 +75,21 @@ def _find_coordinator_by_device(
         raise ValueError(msg)
 
     config_entry_ids = device_entry.config_entries
+    # Default to None so a device belonging to some other integration raises
+    # the documented ValueError below instead of StopIteration.
     entry = next(
-        entry
-        for entry in hass.config_entries.async_entries(DOMAIN)
-        if entry.entry_id in config_entry_ids
+        (
+            entry
+            for entry in hass.config_entries.async_entries(DOMAIN)
+            if entry.entry_id in config_entry_ids
+        ),
+        None,
     )
 
-    if entry and entry.state != ConfigEntryState.LOADED:
+    if entry is not None and entry.state != ConfigEntryState.LOADED:
         msg = f"Device {device_id} config entry is not loaded"
         raise ValueError(msg)
-    if entry is None or entry.entry_id not in hass.data[DOMAIN]:
+    if entry is None or entry.entry_id not in hass.data.get(DOMAIN, {}):
         msg = f"Device {device_id} is not from an existing birdbuddy config entry"
         raise ValueError(msg)
     coordinator: BirdBuddyDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]

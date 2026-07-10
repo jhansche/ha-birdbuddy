@@ -132,3 +132,28 @@ async def test_services(hass):  # , config_entry):
             confidence_threshold=7,
             share_media=True,
         )
+
+
+async def test_collect_postcard_before_any_entry_loads(hass):
+    """The service reports a missing feeder when no entry has loaded yet.
+
+    async_setup registers the service whether or not a config entry exists,
+    and only async_setup_entry populates hass.data[DOMAIN], so a call can
+    arrive while that key is still absent.
+    """
+    assert await async_setup_component(hass, DOMAIN, {})
+    assert DOMAIN not in hass.data
+
+    with pytest.raises(ValueError, match="not found"):
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_COLLECT_POSTCARD,
+            {
+                "sighting": {
+                    "sightingReport": {},
+                    "feeder": {"id": "feeder id", "name": "Feeder"},
+                },
+                "postcard": {"id": "feed item id"},
+            },
+            blocking=True,
+        )

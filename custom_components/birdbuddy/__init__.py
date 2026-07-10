@@ -140,16 +140,15 @@ def _setup_services(hass: HomeAssistant) -> None:
             # factory reset and re-paired while still belonging to the same
             # user. Assuming that, move on to the next available coordinator,
             # even if it no longer has the same feeder id.
-            coordinator = next(iter(hass.data[DOMAIN].values()))
-            if coordinator:
-                LOGGER.warning(
-                    "Feeder with id '%s' not found: trying %s",
-                    feeder_id,
-                    list(coordinator.feeders.keys()),
-                )
-            else:
-                msg = "Feeder with id '{feeder_id}' not found."
+            coordinator = next(iter(hass.data.get(DOMAIN, {}).values()), None)
+            if coordinator is None:
+                msg = f"Feeder with id '{feeder_id}' not found."
                 raise ValueError(msg)
+            LOGGER.warning(
+                "Feeder with id '%s' not found: trying %s",
+                feeder_id,
+                list(coordinator.feeders.keys()),
+            )
 
         await coordinator.handle_collect_postcard(service.data)
 
