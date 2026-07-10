@@ -1,0 +1,17 @@
+# markdownlint configuration
+# https://github.com/DavidAnson/markdownlint
+
+default: true
+
+# MD013 - Ignore line length in code blocks and tables
+MD013:
+  code_blocks: false
+  tables: false
+
+# MD029 - Require ordered list numbering (1, 2, 3)
+MD029:
+  style: ordered
+
+# MD060 - Allow unaligned table pipes (long-cell content would force
+# excessive padding on every adjacent row)
+MD060: false

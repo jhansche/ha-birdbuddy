@@ -1,0 +1,30 @@
+# Dev / CI tooling. Home Assistant is only a dev/test dependency here -- at
+# runtime HA is the user's own running instance, and the integration's runtime
+# requirements (pybirdbuddy + python-graphql-client) are declared in
+# custom_components/birdbuddy/manifest.json.
+#
+# pytest-homeassistant-custom-component (phacc) is the standard test harness for
+# custom integrations. Each phacc patch release hard-pins ONE exact Home
+# Assistant version plus the full pytest stack HA develops against, so `make
+# deps` gives every dev + CI the identical HA/pytest environment. Do NOT
+# separately pin pytest / pytest-asyncio / pytest-cov -- phacc owns those and a
+# second pin conflicts.
+#
+# A phacc version number reveals nothing about which HA release it selects, so
+# the mapping is recorded below and enforced by tests/test_ha_target.py. Bumping
+# phacc is a deliberate choice of HA target, so dependabot leaves this pin alone
+# (see .github/dependabot.yml) and a bump that skips the mapping line fails the
+# test suite.
+#
+# phacc 0.13.345 tests against Home Assistant 2026.7.1
+# https://github.com/MatthewFlamm/pytest-homeassistant-custom-component/releases/tag/0.13.345
+pytest-homeassistant-custom-component == 0.13.345
+
+# Linters / type-checker, independent of the HA version.
+ruff ~= 0.15.20
+pyright ~= 1.1.411
+
+# The integration's runtime library (also pinned in manifest.json), installed
+# so the test suite can import `birdbuddy`.
+pybirdbuddy == 0.0.20
+python-graphql-client == 0.4.3

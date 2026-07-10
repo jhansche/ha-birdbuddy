@@ -1,0 +1,91 @@
+# https://docs.astral.sh/ruff/configuration/
+# 88 is the default line length for both ruff and Black.
+# https://docs.astral.sh/ruff/settings/#line-length
+# https://black.readthedocs.io/en/stable/the_black_code_style/current_style.html#line-length
+line-length = 88
+target-version = "py314"
+include = ["custom_components/**/*.py", "tests/**/*.py"]
+
+# https://docs.astral.sh/ruff/rules/
+[lint]
+select = [
+    "E", "W",  # pycodestyle errors and warnings
+    "F",       # Pyflakes (unused imports, undefined names)
+    "I",       # isort (import sorting)
+    "ANN",     # flake8-annotations (type hints required)
+    "ASYNC",   # flake8-async (async/await best practices)
+    "B",       # flake8-bugbear (likely bugs and design problems)
+    "BLE",     # flake8-blind-except (no broad exception catching)
+    "C4",      # flake8-comprehensions
+    "EM",      # flake8-errmsg (exception message formatting)
+    "FA",      # flake8-future-annotations (require __future__ annotations)
+    "G",       # flake8-logging-format (no f-strings in logging)
+    "PIE",     # flake8-pie (unnecessary code patterns)
+    "T20",     # flake8-print (disallow print statements)
+    "PT",      # flake8-pytest-style (pytest conventions)
+    "SIM",     # flake8-simplify (simplification suggestions)
+    "ARG",     # flake8-unused-arguments (unused function args)
+    "PTH",     # flake8-use-pathlib (prefer pathlib over os.path)
+    "TID252",  # flake8-tidy-imports (no relative imports)
+    "TRY",     # tryceratops (exception handling best practices)
+    "N",       # pep8-naming (naming conventions)
+    "PLC",     # Pylint convention (includes import-outside-top-level)
+    "PLR0915", # Pylint too-many-statements
+    "S101",    # flake8-bandit assert (banned in source; allowed in tests)
+    "S110",    # flake8-bandit try-except-pass
+    "S112",    # flake8-bandit try-except-continue
+    "UP",      # pyupgrade
+    "D",       # pydocstyle
+    "RUF",     # Ruff-specific rules (incl. RUF100 unused-noqa)
+]
+
+ignore = [
+    "D203",    # incompatible with D211 (no-blank-line-before-class)
+    "D213",    # incompatible with D212 (multi-line-summary-first-line)
+    "TRY003",  # long exception messages are fine
+]
+
+[lint.pydocstyle]
+# Google-style docstrings so multi-line docstrings carry Args:/Returns:/Raises:.
+convention = "google"
+
+[lint.pylint]
+max-statements = 40  # Google style guide recommends ~40 lines per function
+
+[lint.flake8-tidy-imports]
+# Ban ALL relative imports (including single-dot); require absolute paths.
+# Home Assistant components are exempted below, matching HA core.
+ban-relative-imports = "all"
+
+# Match Home Assistant core's import sorting so the code doesn't churn against
+# HA conventions (force-sort-within-sections, combine-as-imports).
+[lint.isort]
+force-sort-within-sections = true
+combine-as-imports = true
+split-on-trailing-comma = false
+
+[lint.per-file-ignores]
+# Home Assistant core bans relative imports repo-wide, then re-allows them
+# inside components (its own per-file-ignore:
+# "homeassistant/components/*/*/*" = ["TID252"]). Every core integration uses
+# `from .const import ...`, so we mirror that exemption here. HA APIs also
+# surface `typing.Any` in many signatures, so relax ANN401 for the component.
+"custom_components/**" = [
+    "TID252",  # relative imports are the sanctioned HA in-component style
+    "ANN401",  # HA APIs (config dicts, JSON payloads) legitimately use Any
+    "ARG001",  # HA dictates callback signatures (e.g. unused `hass`)
+    "ARG002",  # HA dictates method signatures (e.g. reauth `entry_data`)
+    "RUF012",  # HA declares `_attr_options` / `_attr_extra_state_attributes`
+               # as instance attributes read via `hasattr(self, ...)`, so
+               # `ClassVar` would contradict the base class.
+]
+# Relax the requirements for test files (one-line docstrings still required).
+"tests/*" = [
+    "ANN001",  # Missing type annotation for function argument
+    "ANN201",  # Missing return type annotation for public function
+    "ANN202",  # Missing return type annotation for private function
+    "ARG001",  # Unused function argument
+    "ARG002",  # Unused method argument
+    "ARG005",  # Unused lambda argument
+    "S101",    # asserts are expected in tests
+]

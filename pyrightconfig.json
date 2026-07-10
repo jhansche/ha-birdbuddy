@@ -1,0 +1,16 @@
+{
+  "pythonVersion": "3.14",
+  "venvPath": ".",
+  "venv": "venv",
+  "exclude": ["**/__pycache__", "**/.*", "venv"],
+  "include": ["custom_components", "tests"],
+  "reportIncompatibleVariableOverride": false,
+  "executionEnvironments": [
+    {
+      "root": "tests",
+      "extraPaths": ["."],
+      "reportTypedDictNotRequiredAccess": false,
+      "reportOptionalMemberAccess": false
+    }
+  ]
+}

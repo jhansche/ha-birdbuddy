@@ -1,1 +1,5 @@
-homeassistant
+# Runtime dependencies are declared in
+# custom_components/birdbuddy/manifest.json ("requirements"): pybirdbuddy and
+# python-graphql-client. Home Assistant itself is provided by the user's running
+# instance (and, for tests, by pytest-homeassistant-custom-component pinned in
+# requirements-dev.txt).
