@@ -1,1 +1,1 @@
-"""Tests for Bird Buddy"""
+"""Tests for Bird Buddy."""

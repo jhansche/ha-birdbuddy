@@ -1,8 +1,10 @@
-"""Bird Buddy firmware updates"""
+"""Bird Buddy firmware updates."""
 
 from __future__ import annotations
+
 import asyncio
 from typing import Any
+
 from birdbuddy.exceptions import GraphqlError
 from birdbuddy.feeder import FeederState
 from homeassistant.components.update import (
@@ -11,14 +13,14 @@ from homeassistant.components.update import (
     UpdateEntityFeature,
 )
 from homeassistant.config_entries import ConfigEntry
-from homeassistant.core import HomeAssistant, HomeAssistantError
+from homeassistant.core import HomeAssistant
+from homeassistant.exceptions import HomeAssistantError
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
 
 from .const import DOMAIN, LOGGER
 from .coordinator import BirdBuddyDataUpdateCoordinator
 from .device import BirdBuddyDevice
 from .entity import BirdBuddyMixin
-
 
 MAX_ERRORS = 4
 REJECT_STATES = [
@@ -36,14 +38,20 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Set up entities from a config entry."""
+    """Set up the Bird Buddy update entities from a config entry.
+
+    Args:
+        hass: The Home Assistant instance.
+        entry: The config entry being set up.
+        async_add_entities: Callback used to register the new entities.
+    """
     coordinator = hass.data[DOMAIN][entry.entry_id]
     feeders = coordinator.feeders.values()
     async_add_entities(BirdBuddyUpdate(f, coordinator) for f in feeders)
 
 
 class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
-    """Representation of a demo update entity."""
+    """Representation of a Bird Buddy firmware update entity."""
 
     coordinator: BirdBuddyDataUpdateCoordinator
 
@@ -61,29 +69,55 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
         feeder: BirdBuddyDevice,
         coordinator: BirdBuddyDataUpdateCoordinator,
     ) -> None:
+        """Initialize the firmware update entity.
+
+        Args:
+            feeder: The Bird Buddy device this entity represents.
+            coordinator: The coordinator providing feeder updates.
+        """
         super().__init__(feeder, coordinator)
         self._attr_unique_id = f"{self.feeder.id}-updater"
         self._attr_entity_registry_enabled_default = self.feeder.is_owner
 
     @property
     def available(self) -> bool:
-        """Updates are available only to the owner account."""
+        """Return whether the update entity is available.
+
+        Returns:
+            True when the base entity is available and the feeder is owned by
+            this account; updates are only available to the owner.
+        """
         return super().available and self.feeder.is_owner
 
     @property
     def installed_version(self) -> str | None:
-        """Current version"""
+        """Return the currently installed firmware version.
+
+        Returns:
+            The feeder's current firmware version, if known.
+        """
         return self.feeder.version
 
     @property
     def latest_version(self) -> str | None:
-        """Latest available version"""
+        """Return the latest available firmware version.
+
+        Returns:
+            The available update version, or the current version when no
+            update is available.
+        """
         # available version will be None if there is no update available,
         # in which case latest version == current version.
         return self.feeder.version_update_available or self.feeder.version
 
     @property
     def in_progress(self) -> bool | int | None:
+        """Return the firmware update progress.
+
+        Returns:
+            False when no update is running or it is complete, True for an
+            indeterminate start, otherwise the integer percent complete.
+        """
         if not self.__update_state:
             return False
         if self.__update_state.is_complete:
@@ -99,17 +133,30 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
     async def async_install(
         self, version: str | None, backup: bool, **kwargs: Any
     ) -> None:
-        """Install an update."""
-        assert self.__update_state is None
+        """Install a firmware update, blocking until it completes.
+
+        Args:
+            version: The requested version; ignored if it is not the latest.
+            backup: Whether to back up before installing (unused).
+            **kwargs: Additional Home Assistant install options (unused).
+
+        Raises:
+            HomeAssistantError: If the feeder is in a state that rejects
+                updates, its battery is too low, or the update fails.
+        """
+        if self.__update_state is not None:
+            msg = "A firmware update is already in progress"
+            raise HomeAssistantError(msg)
 
         if self.feeder.state in REJECT_STATES:
-            raise HomeAssistantError(
-                f"Cannot perform update when in state {self.feeder.state.value}"
-            )
+            msg = f"Cannot perform update when in state {self.feeder.state.value}"
+            raise HomeAssistantError(msg)
         if self.feeder.battery.percentage < 10 and not self.feeder.battery.is_charging:
-            raise HomeAssistantError(
-                f"Low battery, charge the Feeder first: {self.feeder.battery.percentage}%"
+            msg = (
+                "Low battery, charge the Feeder first: "
+                f"{self.feeder.battery.percentage}%"
             )
+            raise HomeAssistantError(msg)
 
         if version and version != self.latest_version:
             LOGGER.warning(
@@ -131,10 +178,11 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
         while not result.is_complete:
             if result.is_failed:
                 self.__update_state = None
-                raise HomeAssistantError(
-                    f"Update failed on {self.feeder.name}: {result.failure_reason};\n"
-                    f"{result}"
+                msg = (
+                    f"Update failed on {self.feeder.name}: "
+                    f"{result.failure_reason};\n{result}"
                 )
+                raise HomeAssistantError(msg)
 
             self.async_write_ha_state()
             LOGGER.debug("Current update progress=%s", self.__update_state)
@@ -162,6 +210,5 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
 
             self.__update_state = result
 
-        assert result.is_complete
         LOGGER.info("Bird Buddy update complete: %s", self.feeder.name)
         self.__update_state = None

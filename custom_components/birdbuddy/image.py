@@ -1,14 +1,11 @@
 """The Bird Buddy image entity."""
 
 from birdbuddy.media import Media, is_media_expired
-from homeassistant.components.image import (
-    UNDEFINED,
-    ImageEntity,
-    Image,
-)
+from homeassistant.components.image import Image, ImageEntity
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import HomeAssistant, callback
 from homeassistant.helpers.entity_platform import AddEntitiesCallback
+from homeassistant.helpers.typing import UNDEFINED
 
 from .const import DOMAIN, LOGGER
 from .coordinator import BirdBuddyDataUpdateCoordinator
@@ -22,7 +19,13 @@ async def async_setup_entry(
     entry: ConfigEntry,
     async_add_entities: AddEntitiesCallback,
 ) -> None:
-    """Initialize config entry."""
+    """Set up the Bird Buddy image entities from a config entry.
+
+    Args:
+        hass: The Home Assistant instance.
+        entry: The config entry being set up.
+        async_add_entities: Callback used to register the new entities.
+    """
     coordinator: BirdBuddyDataUpdateCoordinator = hass.data[DOMAIN][entry.entry_id]
     feeders = coordinator.feeders.values()
     async_add_entities(
@@ -44,28 +47,44 @@ class BirdBuddyRecentVisitorImageEntity(BirdBuddyMixin, ImageEntity):
         feeder: BirdBuddyDevice,
         coordinator: BirdBuddyDataUpdateCoordinator,
     ) -> None:
-        """Initialize the entity."""
+        """Initialize the recent-visitor image entity.
+
+        Args:
+            hass: The Home Assistant instance.
+            feeder: The Bird Buddy device this entity represents.
+            coordinator: The coordinator providing feeder updates.
+        """
         ImageEntity.__init__(self, hass)
         BirdBuddyMixin.__init__(self, feeder, coordinator)
         self._latest_media = None
         self._attr_unique_id = f"{self.feeder.id}-recent-image"
 
     def image(self) -> bytes | None:
-        """Return the image bytes."""
+        """Return the image bytes.
+
+        Returns:
+            None; image data is served from a URL via ``async_image()``.
+        """
         # See async_image()
         return None
 
     async def _async_load_image_from_url(self, url: str) -> Image | None:
-        """
-        Load an image by URL, ensuring compatibility with Home Assistant.
+        """Load an image by URL, ensuring compatibility with Home Assistant.
 
         This method overrides the parent implementation because cloudfront
         sometimes returns a `text/plain` content type for image data, which
         is incompatible with Home Assistant's requirement for `image/*`.
         To address this, the content type is explicitly set to `image/jpeg`.
 
-        If there's an HTTP error, `fetch_url` will still raise the appropriate
-        exception.
+        Args:
+            url: The image URL to fetch.
+
+        Returns:
+            The fetched image tagged as `image/jpeg`, or None if the fetch
+            returned no content.
+
+        Raises:
+            HomeAssistantError: If ``_fetch_url`` encounters an HTTP error.
         """
         if response := await self._fetch_url(url):
             return Image(
@@ -75,6 +94,7 @@ class BirdBuddyRecentVisitorImageEntity(BirdBuddyMixin, ImageEntity):
         return None
 
     async def async_added_to_hass(self) -> None:
+        """Register the recent-visitor listener when added to hass."""
         await super().async_added_to_hass()
         self.async_on_remove(
             self.coordinator.add_visitor_listener(
@@ -85,10 +105,23 @@ class BirdBuddyRecentVisitorImageEntity(BirdBuddyMixin, ImageEntity):
 
     @callback
     def _on_recent_visitor(self, visitors: RecentVisitors) -> None:
+        """Update the image from the latest recorded visitor.
+
+        Args:
+            visitors: The recent-visitors tracker for this feeder.
+        """
         self._update_url(visitors.latest_media)
         self.async_write_ha_state()
 
-    def _update_url(self, media: Media) -> None:
+    def _update_url(self, media: Media | None) -> None:
+        """Update the cached image URL from a media item.
+
+        Sets the image URL when the media has an unexpired content or
+        thumbnail URL; otherwise clears the cached URL if it has expired.
+
+        Args:
+            media: The latest media for this feeder, if any.
+        """
         if (
             media
             and (url := media.content_url or media.thumbnail_url)

@@ -1,9 +1,10 @@
 """Constants for the Bird Buddy integration."""
 
 from datetime import timedelta
+import logging
+
 from homeassistant.const import CONF_DEVICE_ID
 from homeassistant.helpers import config_validation as cv
-import logging
 import voluptuous as vol
 
 DOMAIN = "birdbuddy"
