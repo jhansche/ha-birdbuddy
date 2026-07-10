@@ -51,6 +51,7 @@ class BirdBuddyMixin(CoordinatorEntity[BirdBuddyDataUpdateCoordinator], RestoreE
         """Return whether the entity is available.
 
         Returns:
-            True while the feeder is present.
+            True while the coordinator's last update succeeded and the
+            feeder is present; entities go unavailable when polling fails.
         """
-        return self.feeder is not None
+        return super().available and self.feeder is not None
