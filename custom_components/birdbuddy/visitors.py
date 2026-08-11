@@ -5,7 +5,7 @@ from collections.abc import Callable
 
 from birdbuddy.birds import Species
 from birdbuddy.client import BirdBuddy
-from birdbuddy.feed import FeedNodeType
+from birdbuddy.feed import FeedNode, FeedNodeType
 from birdbuddy.feeder import Feeder
 from birdbuddy.media import Media, is_media_expired
 from birdbuddy.sightings import PostcardSighting
@@ -90,6 +90,55 @@ class RecentVisitors:
             event_filter=filter_my_postcards,
         )
 
+    def media_from_postcard(self, postcard: FeedNode) -> Media | None:
+        """Return this feeder's newest usable image from a NewPostcard.
+
+        A postcard carries its own media, so this needs no
+        `sightingCreateFromPostcard` call. That matters because the mutation
+        currently returns INTERNAL_SERVER_ERROR from the Bird Buddy API, and
+        it is the only reason the image entity ever depended on a mutation.
+        """
+        if (feeder_id := postcard.feeder_id) and feeder_id != self.feeder.id:
+            return None
+
+        images = postcard.images
+        if not feeder_id:
+            # No feeder on the item: match on the signed media URL instead, the
+            # same way `_find_media_with_species` does.
+            images = [m for m in images if self.feeder.id in (m.thumbnail_url or "")]
+
+        if not (media := next(iter(images), None)):
+            return None
+        url = media.content_url or media.thumbnail_url
+        if not url or is_media_expired(url):
+            return None
+        return media
+
+    def update_from_postcard(self, postcard: FeedNode, notify: bool = True) -> bool:
+        """Adopt a postcard's media as the latest, if it is newer than ours."""
+        if not (media := self.media_from_postcard(postcard)):
+            return False
+
+        current = self._latest_media
+        if (
+            current
+            and (current_at := current.created_at)
+            and (new_at := media.created_at)
+            and new_at <= current_at
+        ):
+            return False
+
+        LOGGER.debug(
+            "Setting recent visitor on %s from postcard media: %s: %s",
+            self.feeder.name,
+            media.created_at,
+            media.content_url,
+        )
+        self._latest_media = media
+        if notify:
+            self._notify_listeners()
+        return True
+
     async def _update_latest_visitor(self) -> None:
         feed = await self.client.feed()
 
@@ -118,6 +167,12 @@ class RecentVisitors:
                 self._latest_media.created_at,
                 self._latest_media.content_url,
             )
+
+        # Uncollected postcards are usually newer than anything above, and on a
+        # feeder whose postcards are never collected they are the only source of
+        # an image at all. Each only replaces the current media if it is newer.
+        for postcard in feed.filter(of_type=FeedNodeType.NewPostcard):
+            self.update_from_postcard(postcard, notify=False)
 
         if not self._latest_species:
             # Did not find media in the feed.

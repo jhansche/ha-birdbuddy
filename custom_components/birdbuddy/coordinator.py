@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from birdbuddy.client import BirdBuddy
+from birdbuddy.exceptions import CompositeException, GraphqlError
 from birdbuddy.feed import FeedNode, FeedNodeType
 from birdbuddy.feeder import Feeder
 from birdbuddy.media import Collection
@@ -54,6 +55,11 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
             self.visitors[feeder.id] = RecentVisitors(feeder, self.client, self.hass)
         return self.visitors[feeder.id].register_callback(listener)
 
+    def _update_visitors_from_postcard(self, postcard: FeedNode) -> None:
+        """Offer a postcard's own media to the feeder it belongs to."""
+        for visitors in self.visitors.values():
+            visitors.update_from_postcard(postcard)
+
     async def _process_feed(self, feed: list[FeedNode]) -> bool:
         """Attempt to process new feed items.
 
@@ -78,6 +84,12 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
         LOGGER.debug("Found postcards %s", postcards)
         for postcard in postcards:
             LOGGER.debug("A new postcard is ready to process: %s", postcard)
+
+            # Publish the postcard's own image first, independently of
+            # everything below. The recent visitor image is a read; it should
+            # not depend on a mutation that collects a sighting.
+            self._update_visitors_from_postcard(postcard)
+
             if not self.hass.bus.async_listeners().get(EVENT_NEW_POSTCARD_SIGHTING):
                 # if no one is listening, no sense in getting sighting data
                 LOGGER.debug("No event listeners: skipping postcard conversion")
@@ -95,7 +107,22 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
             # If this is a viable option, we can supply a Recipe in docs to show how this could
             # be done. Similarly, we can supply some default blueprints to handle this with
             # user input.
-            sighting = await self.client.sighting_from_postcard(postcard=postcard)
+            try:
+                sighting = await self.client.sighting_from_postcard(postcard=postcard)
+            except (GraphqlError, CompositeException) as exc:
+                # The API has been returning INTERNAL_SERVER_ERROR here since
+                # around April 2026 (#98). Letting it propagate turned one
+                # failed postcard into UpdateFailed for the whole coordinator,
+                # so every entity - battery, feeder state, the switches - went
+                # unavailable over a call none of them use. Skip the postcard
+                # and keep the update successful.
+                LOGGER.warning(
+                    "Could not convert postcard %s to a sighting; skipping it. "
+                    "The recent visitor image is unaffected. %s",
+                    postcard.node_id,
+                    exc,
+                )
+                continue
             data = {
                 "postcard": postcard.data,
                 "sighting": sighting.data,
