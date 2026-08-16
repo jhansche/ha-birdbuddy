@@ -2,8 +2,11 @@ name: Python package
 
 on:
   push:
+    branches: [main]
+  pull_request:
   schedule:
     - cron: "30 16 * * WED"
+  workflow_dispatch:
 
 jobs:
   build:
