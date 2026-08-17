@@ -4,31 +4,25 @@ on:
   push:
     branches: [main]
   pull_request:
-  schedule:
-    - cron: "30 16 * * WED"
   workflow_dispatch:
+
+permissions:
+  contents: read
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      max-parallel: 4
-      matrix:
-        python-version: ["3.12"]
-
     steps:
-      - uses: actions/checkout@v3
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v4
+      - uses: actions/checkout@v7
+      - uses: actions/setup-python@v7
         with:
-          python-version: ${{ matrix.python-version }}
-
+          python-version-file: ".python-version"
+          cache: pip
+      # make lint runs markdownlint through npx, which needs Node.
+      - uses: actions/setup-node@v7
+        with:
+          node-version: "24"
       - name: Install dependencies
-        run: |
-          python -m pip install --upgrade pip
-          rm -rf src/pybirdbuddy
-          pip install -r requirements.test.txt
-
-      - name: Run pytest
-        run: |
-          pytest
+        run: make deps
+      - name: Lint, type check, and test
+        run: make check
