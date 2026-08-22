@@ -216,16 +216,17 @@ class BirdBuddyRecentVisitorEntity(BirdBuddyMixin, RestoreSensor):
     def _on_recent_visitor(self, visitors: RecentVisitors) -> None:
         """Update the entity from the latest recorded visitor.
 
+        Species and picture are updated together from the same detection, so
+        the state never lags its ``entity_picture``.
+
         Args:
             visitors: The recent-visitors tracker for this feeder.
         """
         media = visitors.latest_media
         species = visitors.latest_species
-        if media:
-            self._latest_media = media
-            self._attr_entity_picture = media.content_url
-        if species:
-            self._attr_native_value = species.name
+        self._latest_media = media
+        self._attr_entity_picture = media.content_url if media else None
+        self._attr_native_value = species.name if species else None
         self.async_write_ha_state()
 
 

@@ -8,10 +8,9 @@ from birdbuddy.client import BirdBuddy
 from birdbuddy.feed import FeedNodeType
 from birdbuddy.feeder import Feeder
 from birdbuddy.media import Media, is_media_expired
-from birdbuddy.sightings import PostcardSighting
 from homeassistant.core import CALLBACK_TYPE, Event, HomeAssistant, callback
 
-from .const import EVENT_NEW_POSTCARD_SIGHTING, LOGGER
+from .const import ATTR_FEEDER_ID, ATTR_MEDIA, ATTR_SPECIES, EVENT_NEW_POSTCARD, LOGGER
 from .util import _find_media_with_species
 
 type VisitorCallback = Callable[[RecentVisitors], None]
@@ -112,16 +111,14 @@ class RecentVisitors:
                 event_data: The fired event's data payload.
 
             Returns:
-                True if the sighting's feeder id matches this feeder.
+                True if the event's feeder id matches this feeder.
             """
-            return self.feeder.id == (
-                event_data.get("sighting", {}).get("feeder", {}).get("id")
-            )
+            return self.feeder.id == event_data.get(ATTR_FEEDER_ID)
 
         LOGGER.info("Listening for new visitors to feeder %s", self.feeder.name)
         self.hass.add_job(self._update_latest_visitor)
         return self.hass.bus.async_listen(
-            EVENT_NEW_POSTCARD_SIGHTING,
+            EVENT_NEW_POSTCARD,
             self._on_new_postcard,
             event_filter=filter_my_postcards,
         )
@@ -140,7 +137,13 @@ class RecentVisitors:
 
         my_items = _find_media_with_species(self.feeder.id, items)
 
-        if latest := max(my_items, default=None, key=lambda x: x.created_at):
+        dated = [
+            (created, item)
+            for item in my_items
+            if (created := item.created_at) is not None
+        ]
+        if dated:
+            latest = max(dated, key=lambda pair: pair[0])[1]
             media = Media(latest["media"])
             self._latest_media = media
             species = [Species(s) for s in latest.get("species", [])]
@@ -161,8 +164,9 @@ class RecentVisitors:
             # Did not find media in the feed.
             c = await self.client.refresh_collections()
             c = [c for c in c.values() if c.feeder_name == self.feeder.name]
-            if c := max(c, default=None, key=lambda x: x.last_visit):
-                species = c.species
+            if (c := max(c, default=None, key=lambda x: x.last_visit)) and (
+                species := c.species
+            ):
                 self._latest_species = species
                 # TODO(jhansche): fetching the latest media that matches a
                 # feeder from the collection is not straightforward.
@@ -181,56 +185,29 @@ class RecentVisitors:
             listener(self)
 
     async def _on_new_postcard(self, event: Event) -> None:
-        """Handle a new postcard sighting event.
+        """Handle a new-postcard event.
+
+        The backend recognizes the species server-side, so the event carries
+        the recognized species and primary media directly.
 
         Args:
-            event: The ``birdbuddy_new_postcard_sighting`` event.
+            event: The ``birdbuddy_new_postcard`` event.
         """
-        postcard = PostcardSighting(event.data["sighting"])
-
-        if not postcard.report.sightings or not postcard.medias:
-            LOGGER.debug("Postcard has no sightings or media; skipping")
+        media = event.data.get(ATTR_MEDIA)
+        species = event.data.get(ATTR_SPECIES) or []
+        if not media and not species:
+            LOGGER.debug("Postcard has no media or species; skipping")
             return
 
-        # media has created_at, but sightings[] does not.
-        media = next(iter(postcard.medias), None)
-        if media:
-            self._latest_media = media
-
-        sightings = postcard.report.sightings
-        if unlocked := [s for s in sightings if s.sighting_type.is_unlocked]:
-            # NOTE: this might not be correct. If one sighting has multiple
-            # recognized species and one unlocked species, the unlocked one
-            # is very likely a mis-identification. It is unusual for a single
-            # sighting to contain multiple bird species.
-            species = unlocked[0].species
-            self._latest_species = species
-            LOGGER.debug("Reporting recent visitor from unlocked: %s", species.name)
-        elif recognized := [s for s in sightings if s.sighting_type.is_recognized]:
-            # Next best, select a recognized species
-            species = recognized[0].species
-            self._latest_species = species
-            LOGGER.debug("Reporting recent visitor from recognized: %s", species.name)
-        elif guessable := [s for s in sightings if s.suggestions]:
-            # Else, select one that has a list of suggestions
-            suggested = guessable[0].suggestions[0]
-            self._latest_species = suggested.species
-            LOGGER.info(
-                "Reporting recent visitor from unrecognized suggestion: %s",
-                suggested.species.name,
-            )
-        else:
-            # We don't know what it was. Instead of reporting a bogus
-            # "cannot decide" type, just clear the value.
-            self._latest_species = None
-            LOGGER.info("Cannot decide species: %s", sightings[0])
+        # Rebuild the library models from the slim payload; set both together
+        # so the recent-visitor state never lags its picture.
+        self._latest_media = Media(media) if media else None
+        self._latest_species = Species(species[0]) if species else None
 
         LOGGER.debug(
-            "Setting recent visitor on %s from postcard: %s, %s: %s",
+            "Setting recent visitor on %s from postcard: %s, %s",
             self.feeder.name,
             self._latest_species.name if self._latest_species else None,
-            self._latest_media.created_at if self._latest_media else None,
             self._latest_media.content_url if self._latest_media else None,
         )
-
         self._notify_listeners()

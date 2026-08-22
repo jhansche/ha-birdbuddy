@@ -1,9 +1,9 @@
-"""Test the Bird Buddy config flow."""
+"""Test the Bird Buddy collect_postcard service."""
 
-from unittest.mock import ANY, patch
+from unittest.mock import patch
 
 import aiohttp
-from birdbuddy.sightings import SightingFinishStrategy
+from birdbuddy.postcards import CollectedPostcard
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.setup import async_setup_component
 import pytest
@@ -13,15 +13,14 @@ from voluptuous.error import MultipleInvalid
 from custom_components.birdbuddy.const import DOMAIN, SERVICE_COLLECT_POSTCARD
 
 
-async def test_services(hass):  # , config_entry):
-    """Test services."""
+async def test_collect_postcard_service(hass):
+    """The service validates its schema and calls collect_postcard."""
     config_entry = MockConfigEntry(
         domain=DOMAIN,
         data={CONF_EMAIL: "test@email", CONF_PASSWORD: "passw0rd"},
     )
     config_entry.add_to_hass(hass)
 
-    # config_entry.add_to_hass(hass)
     with patch(
         "birdbuddy.client.BirdBuddy.refresh",
         side_effect=aiohttp.ClientConnectionError("Offline"),
@@ -30,108 +29,26 @@ async def test_services(hass):  # , config_entry):
             hass, DOMAIN, {CONF_EMAIL: "test@email", CONF_PASSWORD: "passw0rd"}
         )
 
-    # Schema is checked in layers: empty object raises missing top-level keys
+    # postcard_id is required.
     with pytest.raises(MultipleInvalid) as exc_info:
         await hass.services.async_call(
-            DOMAIN,
-            SERVICE_COLLECT_POSTCARD,
-            {},
-            blocking=True,
+            DOMAIN, SERVICE_COLLECT_POSTCARD, {}, blocking=True
         )
-    assert len(exc_info.value.errors) == 2
     msgs = [str(e) for e in exc_info.value.errors]
-    assert "required key not provided @ data['postcard']" in msgs
-    assert "required key not provided @ data['sighting']" in msgs
+    assert "required key not provided @ data['postcard_id']" in msgs
 
-    # Next layer of schema
-    with pytest.raises(MultipleInvalid) as exc_info:
-        await hass.services.async_call(
-            DOMAIN,
-            SERVICE_COLLECT_POSTCARD,
-            {
-                "sighting": {},
-                "postcard": {},
-            },
-            blocking=True,
-        )
-    assert len(exc_info.value.errors) == 3
-    msgs = [str(e) for e in exc_info.value.errors]
-    assert "required key not provided @ data['sighting']['sightingReport']" in msgs
-    assert "required key not provided @ data['sighting']['feeder']" in msgs
-    assert (
-        "must contain at least one of id. for dictionary value @ "
-        "data['postcard']" in msgs
-    )
-
-    with pytest.raises(MultipleInvalid) as exc_info:
-        await hass.services.async_call(
-            DOMAIN,
-            SERVICE_COLLECT_POSTCARD,
-            {
-                "sighting": {"sightingReport": {}, "feeder": {}},
-                "postcard": {"id": "feed item id"},
-            },
-            blocking=True,
-        )
-    assert len(exc_info.value.errors) == 1
-    msgs = [str(e) for e in exc_info.value.errors]
-    assert (
-        "must contain at least one of id. for dictionary value @ "
-        "data['sighting']['feeder']" in msgs
-    )
-
+    # A valid call reaches collect_postcard with the id and the share flag.
     with patch(
-        "birdbuddy.client.BirdBuddy.finish_postcard",
-        return_value=True,
-    ) as finish_postcard_method:
+        "birdbuddy.client.BirdBuddy.collect_postcard",
+        return_value=CollectedPostcard({"id": "feed item id"}),
+    ) as collect_postcard:
         await hass.services.async_call(
             DOMAIN,
             SERVICE_COLLECT_POSTCARD,
-            {
-                "sighting": {
-                    "sightingReport": {},
-                    "feeder": {"id": "feeder id", "name": "Feeder"},
-                },
-                "postcard": {"id": "feed item id"},
-            },
+            {"postcard_id": "feed item id", "share": True},
             blocking=True,
         )
-
-        finish_postcard_method.assert_called_once_with(
-            "feed item id",
-            ANY,
-            SightingFinishStrategy.RECOGNIZED,
-            confidence_threshold=None,
-            share_media=False,
-        )
-
-    with patch(
-        "birdbuddy.client.BirdBuddy.finish_postcard",
-        return_value=True,
-    ) as finish_postcard_method:
-        await hass.services.async_call(
-            DOMAIN,
-            SERVICE_COLLECT_POSTCARD,
-            {
-                "sighting": {
-                    "sightingReport": {},
-                    "feeder": {"id": "feeder id", "name": "Feeder"},
-                },
-                "postcard": {"id": "feed item id"},
-                "strategy": "mystery",
-                "best_guess_confidence": 7,
-                "share_media": True,
-            },
-            blocking=True,
-        )
-
-        finish_postcard_method.assert_called_once_with(
-            "feed item id",
-            ANY,
-            SightingFinishStrategy.MYSTERY,
-            confidence_threshold=7,
-            share_media=True,
-        )
+    collect_postcard.assert_called_once_with("feed item id", share=True)
 
 
 async def test_collect_postcard_before_any_entry_loads(hass):
@@ -148,12 +65,6 @@ async def test_collect_postcard_before_any_entry_loads(hass):
         await hass.services.async_call(
             DOMAIN,
             SERVICE_COLLECT_POSTCARD,
-            {
-                "sighting": {
-                    "sightingReport": {},
-                    "feeder": {"id": "feeder id", "name": "Feeder"},
-                },
-                "postcard": {"id": "feed item id"},
-            },
+            {"postcard_id": "feed item id"},
             blocking=True,
         )

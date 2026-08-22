@@ -6,7 +6,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .coordinator import BirdBuddyDataUpdateCoordinator, BirdBuddyDevice
 
 
-class BirdBuddyMixin(CoordinatorEntity, RestoreEntity):
+class BirdBuddyMixin(CoordinatorEntity[BirdBuddyDataUpdateCoordinator], RestoreEntity):
     """Helper for all Bird Buddy entities."""
 
     feeder: BirdBuddyDevice

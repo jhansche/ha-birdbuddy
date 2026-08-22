@@ -11,6 +11,7 @@ from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers.typing import ConfigType
 
 from .const import (
+    ATTR_FEEDER_ID,
     DOMAIN,
     LOGGER,
     SERVICE_COLLECT_POSTCARD,
@@ -126,12 +127,12 @@ def _setup_services(hass: HomeAssistant) -> None:
         """Handle a ``birdbuddy.collect_postcard`` service call.
 
         Args:
-            service: The service call carrying the postcard/sighting data.
+            service: The service call carrying the postcard data.
 
         Raises:
             ValueError: If no coordinator is available for the feeder.
         """
-        feeder_id = service.data["sighting"]["feeder"]["id"]
+        feeder_id = service.data.get(ATTR_FEEDER_ID)
         coordinator: BirdBuddyDataUpdateCoordinator | None = (
             _find_coordinator_by_feeder(hass, feeder_id)
         )

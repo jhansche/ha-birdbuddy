@@ -95,4 +95,5 @@ class ConfigFlow(config_entries.ConfigFlow, domain=DOMAIN):
             self._client = None
             errors["base"] = "cannot_connect"
             return None
-        return {"title": client.user.name}
+        user = client.user
+        return {"title": user.name if user else user_input[CONF_EMAIL]}

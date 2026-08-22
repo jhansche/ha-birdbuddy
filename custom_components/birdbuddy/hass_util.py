@@ -33,7 +33,7 @@ def _feeder_id_for_device(
 
 def _find_coordinator_by_feeder(
     hass: HomeAssistant,
-    feeder_id: str,
+    feeder_id: str | None,
 ) -> BirdBuddyDataUpdateCoordinator | None:
     """Find the first coordinator that owns a given feeder.
 

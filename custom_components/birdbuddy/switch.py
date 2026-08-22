@@ -68,11 +68,11 @@ class BirdBuddyOffGridSwitch(BirdBuddyMixin, SwitchEntity):
         return super().available and self.feeder.is_owner
 
     @property
-    def is_on(self) -> bool:
+    def is_on(self) -> bool | None:
         """Return whether the feeder is in off-grid mode.
 
         Returns:
-            True when the feeder is off-grid.
+            True when the feeder is off-grid, or None if not reported.
         """
         return self.feeder.is_off_grid
 
@@ -135,11 +135,11 @@ class BirdBuddyAudioSwitch(BirdBuddyMixin, SwitchEntity):
         return super().available and self.feeder.is_owner
 
     @property
-    def is_on(self) -> bool:
+    def is_on(self) -> bool | None:
         """Return whether audio recording is enabled.
 
         Returns:
-            True when the feeder records audio.
+            True when the feeder records audio, or None if not reported.
         """
         return self.feeder.is_audio_enabled
 
