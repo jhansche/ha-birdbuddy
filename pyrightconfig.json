@@ -4,7 +4,6 @@
   "venv": "venv",
   "exclude": ["**/__pycache__", "**/.*", "venv"],
   "include": ["custom_components", "tests"],
-  "useLibraryCodeForTypes": false,
   "reportIncompatibleVariableOverride": false,
   "executionEnvironments": [
     {
