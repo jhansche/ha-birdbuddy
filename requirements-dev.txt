@@ -21,10 +21,10 @@
 pytest-homeassistant-custom-component == 0.13.345
 
 # Linters / type-checker, independent of the HA version.
-ruff ~= 0.15.20
+ruff ~= 0.16.3
 pyright ~= 1.1.411
 
 # The integration's runtime library (also pinned in manifest.json), installed
 # so the test suite can import `birdbuddy`.
-pybirdbuddy == 0.0.20
+pybirdbuddy == 0.1.0
 python-graphql-client == 0.4.3
