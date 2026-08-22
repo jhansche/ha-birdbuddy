@@ -1,0 +1,38 @@
+version: 2
+
+updates:
+  # Python dev/test tooling (ruff, pyright, pybirdbuddy).
+  - package-ecosystem: "pip"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+    groups:
+      pip:
+        patterns: ["*"]
+    ignore:
+      # Hold pytest-homeassistant-custom-component: its pin selects the Home
+      # Assistant version this integration is tested against, so a bump is a
+      # choice about which HA release to support, not a routine dependency
+      # refresh. It also needs the mapping comment in requirements-dev.txt and
+      # the minimum in hacs.json moved in the same edit, which dependabot has
+      # no way to do. Bump it by hand; tests/test_ha_target.py fails while any
+      # of the three disagree.
+      - dependency-name: "pytest-homeassistant-custom-component"
+      # Hold major bumps for manual review: a major ruff or pyright release
+      # changes what the checks enforce, and a major pybirdbuddy release
+      # changes the API this integration calls.
+      - dependency-name: "*"
+        update-types: ["version-update:semver-major"]
+
+  # GitHub Actions
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "sunday"
+      time: "16:00"
+    groups:
+      github-actions:
+        patterns: ["*"]

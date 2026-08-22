@@ -1,4 +1,5 @@
 """Test the Bird Buddy config flow."""
+
 from unittest.mock import PropertyMock, patch
 
 from birdbuddy.exceptions import AuthenticationFailedError, NoResponseError
@@ -18,14 +19,21 @@ async def test_form(hass: HomeAssistant) -> None:
     assert result["type"] == FlowResultType.FORM
     assert result["errors"] is None
 
-    with patch("birdbuddy.client.BirdBuddy.refresh", return_value=True,), patch(
-        "birdbuddy.client.BirdBuddy.user",
-        new_callable=PropertyMock,
-        return_value=BirdBuddyUser({"name": "Test User"}),
-    ), patch(
-        "custom_components.birdbuddy.async_setup_entry",
-        return_value=True,
-    ) as mock_setup_entry:
+    with (
+        patch(
+            "birdbuddy.client.BirdBuddy.refresh",
+            return_value=True,
+        ),
+        patch(
+            "birdbuddy.client.BirdBuddy.user",
+            new_callable=PropertyMock,
+            return_value=BirdBuddyUser({"name": "Test User"}),
+        ),
+        patch(
+            "custom_components.birdbuddy.async_setup_entry",
+            return_value=True,
+        ) as mock_setup_entry,
+    ):
         result2 = await hass.config_entries.flow.async_configure(
             result["flow_id"],
             {

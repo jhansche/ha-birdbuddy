@@ -1,4 +1,5 @@
 """Test the Bird Buddy config flow."""
+
 from unittest.mock import ANY, patch
 
 import aiohttp
@@ -6,15 +7,10 @@ from birdbuddy.sightings import SightingFinishStrategy
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.setup import async_setup_component
 import pytest
-from pytest_homeassistant_custom_component.common import (
-    MockConfigEntry,
-)
+from pytest_homeassistant_custom_component.common import MockConfigEntry
 from voluptuous.error import MultipleInvalid
 
-from custom_components.birdbuddy.const import (
-    DOMAIN,
-    SERVICE_COLLECT_POSTCARD,
-)
+from custom_components.birdbuddy.const import DOMAIN, SERVICE_COLLECT_POSTCARD
 
 
 async def test_services(hass):  # , config_entry):
@@ -42,10 +38,10 @@ async def test_services(hass):  # , config_entry):
             {},
             blocking=True,
         )
-        assert len(exc_info.value.errors) == 2
-        msgs = [str(e) for e in exc_info.value.errors]
-        assert "required key not provided @ data['postcard']" in msgs
-        assert "required key not provided @ data['sighting']" in msgs
+    assert len(exc_info.value.errors) == 2
+    msgs = [str(e) for e in exc_info.value.errors]
+    assert "required key not provided @ data['postcard']" in msgs
+    assert "required key not provided @ data['sighting']" in msgs
 
     # Next layer of schema
     with pytest.raises(MultipleInvalid) as exc_info:
@@ -58,14 +54,14 @@ async def test_services(hass):  # , config_entry):
             },
             blocking=True,
         )
-        assert len(exc_info.value.errors) == 3
-        msgs = [str(e) for e in exc_info.value.errors]
-        assert "required key not provided @ data['sighting']['sightingReport']" in msgs
-        assert "required key not provided @ data['sighting']['feeder']" in msgs
-        assert (
-            "must contain at least one of id. for dictionary value @ data['postcard']"
-            in msgs
-        )
+    assert len(exc_info.value.errors) == 3
+    msgs = [str(e) for e in exc_info.value.errors]
+    assert "required key not provided @ data['sighting']['sightingReport']" in msgs
+    assert "required key not provided @ data['sighting']['feeder']" in msgs
+    assert (
+        "must contain at least one of id. for dictionary value @ "
+        "data['postcard']" in msgs
+    )
 
     with pytest.raises(MultipleInvalid) as exc_info:
         await hass.services.async_call(
@@ -77,10 +73,12 @@ async def test_services(hass):  # , config_entry):
             },
             blocking=True,
         )
-        assert len(exc_info.value.errors) == 2
-        msgs = [str(e) for e in exc_info.value.errors]
-        assert "required key not provided @ data['sighting']['feeder']['id']" in msgs
-        assert "required key not provided @ data['sighting']['feeder']['name']" in msgs
+    assert len(exc_info.value.errors) == 1
+    msgs = [str(e) for e in exc_info.value.errors]
+    assert (
+        "must contain at least one of id. for dictionary value @ "
+        "data['sighting']['feeder']" in msgs
+    )
 
     with patch(
         "birdbuddy.client.BirdBuddy.finish_postcard",
@@ -133,4 +131,29 @@ async def test_services(hass):  # , config_entry):
             SightingFinishStrategy.MYSTERY,
             confidence_threshold=7,
             share_media=True,
+        )
+
+
+async def test_collect_postcard_before_any_entry_loads(hass):
+    """The service reports a missing feeder when no entry has loaded yet.
+
+    async_setup registers the service whether or not a config entry exists,
+    and only async_setup_entry populates hass.data[DOMAIN], so a call can
+    arrive while that key is still absent.
+    """
+    assert await async_setup_component(hass, DOMAIN, {})
+    assert DOMAIN not in hass.data
+
+    with pytest.raises(ValueError, match="not found"):
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_COLLECT_POSTCARD,
+            {
+                "sighting": {
+                    "sightingReport": {},
+                    "feeder": {"id": "feeder id", "name": "Feeder"},
+                },
+                "postcard": {"id": "feed item id"},
+            },
+            blocking=True,
         )

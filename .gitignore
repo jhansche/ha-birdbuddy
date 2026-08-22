@@ -1,7 +1,59 @@
-/*.iml
-/.idea
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[codz]
+*$py.class
 
-__pycache__
+# C extensions
+*.so
 
+# Distribution / packaging
+build/
+dist/
+*.egg-info/
+*.egg
+
+# Unit test / coverage reports
 htmlcov/
 .coverage
+.coverage.*
+.cache
+coverage.xml
+.hypothesis/
+.pytest_cache/
+junit.xml
+
+# Type checkers / linters
+.mypy_cache/
+.dmypy.json
+.pyre/
+.pytype/
+.ruff_cache/
+
+# Environments
+.env
+.envrc
+.venv
+env/
+venv/
+ENV/
+
+# Editors
+.idea/
+*.iml
+.vscode/
+
+# macOS
+.DS_Store
+
+# Home Assistant local test/dev instance (if you point one at this repo)
+config/
+.storage/
+home-assistant.log*
+home-assistant_v2.db*
+
+# Safety net for any raw API dump captured while debugging — real payloads
+# contain identifying data. Never commit; sanitize into tests/fixtures/ instead.
+*.dump.json
+
+# Claude Code
+.claude/
