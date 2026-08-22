@@ -101,8 +101,10 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
         ]
 
         for node in feed:
-            if node.node_type == FeedNodeType.SpeciesUnlocked and (
-                c := Collection(node.get("collection"))
+            if (
+                node.node_type == FeedNodeType.SpeciesUnlocked
+                and (raw := node.get("collection"))
+                and (c := Collection(raw))
             ):
                 LOGGER.info("Recently unlocked species: %s", c.bird_name)
                 self.client.collections.setdefault(c.collection_id, c)

@@ -41,15 +41,13 @@ class BirdBuddyPowerProfileSelector(BirdBuddyMixin, SelectEntity):
     _attr_name = "Power Profile"
     _attr_icon = "mdi:power-settings"
     _attr_entity_category = EntityCategory.CONFIG
-    _attr_entity_registry_enabled_default = False
     _attr_translation_key = "power_profile"
     _attr_options = [
         "frenzy_mode",
+        "ultra_frenzy_mode",
         "standard_mode",
         "power_saver_mode",
     ]
-    # TODO(jhansche): remove once it is verified working
-    _attr_attribution = "(This entity is incubating)"
 
     def __init__(
         self,
@@ -70,9 +68,13 @@ class BirdBuddyPowerProfileSelector(BirdBuddyMixin, SelectEntity):
         """Return the currently selected power profile.
 
         Returns:
-            The active power profile as a lowercase string.
+            The active power profile as a lowercase string, or None when the
+            feeder reports no or an unknown profile.
         """
-        return self.feeder.power_profile.value.lower()
+        profile = self.feeder.power_profile
+        if profile is PowerProfile.UNKNOWN:
+            return None
+        return profile.value.lower()
 
     @property
     def available(self) -> bool:

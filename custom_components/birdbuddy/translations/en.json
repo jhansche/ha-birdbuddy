@@ -28,6 +28,7 @@
             "power_profile": {
                 "state": {
                     "frenzy_mode": "Frenzy Mode",
+                    "ultra_frenzy_mode": "Ultra Frenzy Mode",
                     "standard_mode": "Standard Mode",
                     "power_saver_mode": "Power Saving Mode"
                 }
