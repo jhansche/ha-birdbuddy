@@ -1,89 +1,29 @@
 collect_postcard:
   name: Collect a Postcard
-  description: Finish a Postcard by adding it to your Bird Buddy Collections.
-  # target:
-  #   device:
-  #     # Technically we don't care about Feeder, just account...
-  #     # But associating a device lets us look up the coordinator and client
-  #     integration: birdbuddy
+  description: Collect a Bird Buddy postcard into your Collections.
   fields:
-    strategy:
-      name: Strategy for collecting the postcard
-      description: "Strategy can be one of
-        * `recognized` - Collect the postcard only if it was a recognized bird. Unrecognized birds will
-          be ignored.
-        * `best_guess` - Collect `recognized` birds, as well as choosing the highest-confidence species
-          that Bird Buddy suggested. Optionally set the confidence threshold (defaults to 10).
-        * `mystery` - Collect as `best_guess`, and anything remaining will be finished as a \"Mystery
-          Visitor\".
-        "
+    postcard_id:
+      name: Postcard ID
+      description: The feed-item id of the postcard to collect. From the
+        birdbuddy_new_postcard event this is `.postcard_id`.
+      required: true
+      example: "{{ trigger.event.data.postcard_id }}"
+      selector:
+        text:
+    feeder_id:
+      name: Feeder ID
+      description: The Bird Buddy feeder id, used to pick the account when
+        more than one is configured. From the event this is `.feeder_id`.
       required: false
-      default: "recognized"
-      example: "recognized"
+      example: "{{ trigger.event.data.feeder_id }}"
       selector:
-        select:
-          options:
-            - "recognized"
-            - "best_guess"
-            - "mystery"
-    best_guess_confidence:
-      name: Best-guess confidence threshold
-      description: Confidence threshold for auto-accepting Bird Buddy's recommendations.
-      default: 10
-      example: 10
-      selector:
-        number:
-          min: 0
-          max: 100
-          step: 1
-          unit_of_measurement: "%"
-    share_media:
-      name: Share postcard media
-      description: Whether each media image should be shared with the community.
+        text:
+    share:
+      name: Share media
+      description: Whether the collected media is also shared with the
+        Bird Buddy community.
+      required: false
       default: false
       example: false
       selector:
         boolean:
-    postcard:
-      name: Postcard data
-      description: Data from the FeedNode representing the postcard.
-        This corresponds to the `.postcard` data received in the Event.
-        The only field that matters is `.id`
-      required: true
-      example:
-        - '{"id": "$postcardFeedItemId"}'
-        - "{{ trigger.event.data.postcard }}"
-      selector:
-        object:
-      # TODO: support nested fields
-      # fields:
-      #   id:
-      #     name: The postcard (feed item) id
-      #     required: true
-    sighting:
-      name: Sighting data
-      description: Data from the PostcardSighting object after converting the postcard to a sighting.
-        This corresponds to the `.sighting` data received in the Event. This should generally just be
-        passed through from an automation.
-      required: true
-      example:
-        - '{"feeder":{"id":"$feederId"}, "sightingReport":{"sightings":[]}}'
-        - "{{ trigger.event.data.sighting }}"
-      selector:
-        object:
-      # TODO: support nested fields
-      # fields:
-      #   feeder:
-      #     # TODO: not really required, but it is used in the string representation of the Sighting object.
-      #     required: true
-      #   sightingReport:
-      #     name: SightingReport data
-      #     required: true
-      #     fields:
-      #       sightings:
-      #         name: List of sightings in this report
-      #         required: true
-      #         fields:
-      #           species:
-      #             required: false
-
