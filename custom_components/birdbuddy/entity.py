@@ -27,12 +27,6 @@ class BirdBuddyMixin(CoordinatorEntity[BirdBuddyDataUpdateCoordinator], RestoreE
         self.feeder = feeder
         self._attr_device_info = feeder.device_info
 
-    def _handle_coordinator_update(self) -> None:
-        """Refresh the cached device info when the coordinator updates."""
-        if self.device_info is not None:
-            self.device_info.update(self.feeder.device_info)
-        super()._handle_coordinator_update()
-
     @property
     def entity_registry_enabled_default(self) -> bool:
         """Return whether the entity is enabled in the registry by default.
