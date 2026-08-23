@@ -19,7 +19,7 @@ _ANALYSIS = PostcardAnalysis(
             {
                 "__typename": "MediaImage",
                 "id": "m1",
-                "createdAt": "2026-07-09T12:00:00.000+0000",
+                "createdAt": "2026-07-09T12:00:00.000Z",
                 "thumbnailUrl": "https://example.invalid/t.jpg",
                 "contentUrl": "https://example.invalid/c.jpg",
             }
