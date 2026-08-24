@@ -29,6 +29,7 @@ from .const import (
     POLLING_INTERVAL,
 )
 from .device import BirdBuddyDevice
+from .repairs import async_check_legacy_event_listeners
 from .visitors import RecentVisitors, VisitorCallback
 
 
@@ -180,6 +181,12 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
             else:
                 self.feeders[i] = f
         self.first_update = False
+
+        # Every poll reads the listener counts, including the first one that
+        # skips the feed above, and each repeat clears the issue once the last
+        # stale trigger has moved to the new event.
+        async_check_legacy_event_listeners(self.hass)
+
         return self.client
 
     async def handle_collect_postcard(self, data: dict[str, Any]) -> bool:

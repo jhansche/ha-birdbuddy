@@ -29,6 +29,12 @@ ATTR_MEDIA = "media"
 TRIGGER_TYPE_POSTCARD = "new_postcard"
 EVENT_NEW_POSTCARD = f"{DOMAIN}_new_postcard"
 
+# The event name this integration fired before adopting pybirdbuddy v0.1.0.
+# A listener still registered on it means an automation kept the old trigger,
+# which repairs reports.
+EVENT_NEW_POSTCARD_SIGHTING_LEGACY = f"{DOMAIN}_new_postcard_sighting"
+ISSUE_LEGACY_POSTCARD_EVENT = "legacy_postcard_event"
+
 SERVICE_COLLECT_POSTCARD = "collect_postcard"
 SERVICE_SCHEMA_COLLECT_POSTCARD = vol.Schema(
     {

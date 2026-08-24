@@ -58,5 +58,11 @@
                 }
             }
         }
+    },
+    "issues": {
+        "legacy_postcard_event": {
+            "description": "Een automatisering of script wordt nog geactiveerd door `{legacy_event}`, dat deze integratie heeft vervangen door `{event}`. Wijzig die triggers naar `{event}`, waarvan de payload `postcard_id`, `feeder_id`, `species` en `media` bevat. Automatiseringen met de apparaattrigger \"Er staat een nieuwe ansichtkaart klaar\" blijven werken en hoeven niet te worden aangepast.",
+            "title": "Automatisering gebruikt een omgenoemde Bird Buddy-gebeurtenis"
+        }
     }
 }

@@ -219,6 +219,10 @@ that reference the event or the service directly need updating:
 Re-importing the Blueprint covers everything if you use it without
 customizing the payload.
 
+Home Assistant raises a Repairs notice while an automation or script still
+triggers on `birdbuddy_new_postcard_sighting`. Editing that trigger clears
+the notice on a following update poll.
+
 ## Development
 
 ```bash

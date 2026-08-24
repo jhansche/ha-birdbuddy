@@ -71,5 +71,11 @@
     "trigger_type": {
       "new_postcard": "A new postcard is ready"
     }
+  },
+  "issues": {
+    "legacy_postcard_event": {
+      "title": "Automation uses a renamed Bird Buddy event",
+      "description": "An automation or script still triggers on `{legacy_event}`, which this integration replaced with `{event}`. Update those triggers to `{event}`, whose payload carries `postcard_id`, `feeder_id`, `species` and `media`. Automations built on the \"A new postcard is ready\" device trigger continue to work and need no change."
+    }
   }
 }
