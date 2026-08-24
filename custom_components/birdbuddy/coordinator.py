@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from birdbuddy.client import BirdBuddy
+from birdbuddy.exceptions import GraphqlError
 from birdbuddy.feed import FeedNode, FeedNodeType
 from birdbuddy.feeder import Feeder
 from birdbuddy.media import Collection
@@ -110,7 +111,21 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
             # processing (e.g. Merlin or other classifiers), then do #2 with
             # the results. If viable, we can supply a Recipe in docs showing
             # how, plus default blueprints to handle it with user input.
-            sighting = await self.client.sighting_from_postcard(postcard=postcard)
+            try:
+                sighting = await self.client.sighting_from_postcard(postcard=postcard)
+            except GraphqlError as exc:
+                # The Bird Buddy cloud API occasionally returns a server error
+                # (e.g. INTERNAL_SERVER_ERROR) for this specific mutation.
+                # Don't let one bad postcard fail the entire coordinator
+                # update -- that would also mark unrelated data (e.g. feeder
+                # battery/food level) stale for this cycle. Log and move on
+                # to the next postcard instead; it'll be retried on the next
+                # update if it's still present in the feed.
+                LOGGER.error(
+                    "Failed to convert postcard to sighting; skipping this postcard: %s",
+                    exc,
+                )
+                continue
             data = {
                 "postcard": postcard.data,
                 "sighting": sighting.data,
