@@ -133,23 +133,25 @@ def _setup_services(hass: HomeAssistant) -> None:
             ValueError: If no coordinator is available for the feeder.
         """
         feeder_id = service.data.get(ATTR_FEEDER_ID)
-        coordinator: BirdBuddyDataUpdateCoordinator | None = (
-            _find_coordinator_by_feeder(hass, feeder_id)
-        )
-        if not coordinator:
-            # We could not find this specific feeder. It may have been
-            # factory reset and re-paired while still belonging to the same
-            # user. Assuming that, move on to the next available coordinator,
-            # even if it no longer has the same feeder id.
+        coordinator: BirdBuddyDataUpdateCoordinator | None = None
+        if feeder_id:
+            coordinator = _find_coordinator_by_feeder(hass, feeder_id)
+
+        if coordinator is None:
+            # Either the call named no feeder, which the service schema
+            # allows, or it named one this account no longer holds: a feeder
+            # factory reset and re-paired keeps its owner and takes a new id.
+            # Both resolve to the first configured account.
             coordinator = next(iter(hass.data.get(DOMAIN, {}).values()), None)
             if coordinator is None:
                 msg = f"Feeder with id '{feeder_id}' not found."
                 raise ValueError(msg)
-            LOGGER.warning(
-                "Feeder with id '%s' not found: trying %s",
-                feeder_id,
-                list(coordinator.feeders.keys()),
-            )
+            if feeder_id:
+                LOGGER.warning(
+                    "Feeder with id '%s' not found: trying %s",
+                    feeder_id,
+                    list(coordinator.feeders.keys()),
+                )
 
         await coordinator.handle_collect_postcard(service.data)
 

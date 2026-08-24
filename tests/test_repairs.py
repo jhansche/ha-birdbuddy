@@ -1,5 +1,6 @@
 """Tests for the renamed-postcard-event repairs issue."""
 
+import logging
 from unittest.mock import AsyncMock, MagicMock
 
 from homeassistant.components.automation.const import DOMAIN as AUTOMATION_DOMAIN
@@ -101,6 +102,30 @@ async def test_disabling_the_automation_clears_the_issue(hass):
     async_check_legacy_event_listeners(hass)
 
     assert _issue(hass) is None
+
+
+async def test_the_warning_logs_once_per_raised_issue(hass, caplog):
+    """Repeat polls hold the issue open and log the warning once.
+
+    The check runs on every poll, and the raised issue already carries this
+    message, so warning each time would repeat it until the user acts.
+    """
+    assert await setup_event_automation(hass, EVENT_NEW_POSTCARD_SIGHTING_LEGACY)
+    await hass.async_block_till_done()
+
+    with caplog.at_level(logging.WARNING):
+        async_check_legacy_event_listeners(hass)
+        async_check_legacy_event_listeners(hass)
+        async_check_legacy_event_listeners(hass)
+
+    assert _issue(hass) is not None
+    warnings = [
+        r
+        for r in caplog.records
+        if r.levelno == logging.WARNING
+        and EVENT_NEW_POSTCARD_SIGHTING_LEGACY in r.getMessage()
+    ]
+    assert len(warnings) == 1
 
 
 async def test_the_first_poll_runs_the_check(hass):

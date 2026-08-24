@@ -71,17 +71,17 @@ account. See below for the entities available.
 
 ## Entities
 
-| Entity           | Entity Type     | Notes                                                                                                                                           |
-|------------------|-----------------|-------------------------------------------------------------------------------------------------------------------------------------------------|
-| `Audio`          | `switch`        | Whether recorded visitor videos will include audio.                                                                                             |
-| `Battery`        | `sensor`        | Current Bird Buddy battery percentage                                                                                                           |
-| `Charging`       | `binary_sensor` | Whether the Bird Buddy is currently charging                                                                                                    |
-| `Off-Grid`       | `switch`        | Present and toggle Off-Grid status (owners only)                                                                                                |
-| `Power Profile`  | `select`        | Choose between the Power Profile settings the feeder reports.                                                                                    |
-| `Recent Visitor` | `sensor`        | State represents the most recent visitor's bird species name, and the `entity_picture` points to the first image on that postcard.              |
-| `State`          | `sensor`        | Current state (ready, offline, etc)                                                                                                             |
-| `Signal`         | `sensor`        | Current wifi signal (RSSI)                                                                                                                      |
-| `Update`         | `update`        | Show and install Firmware updates (owners only)                                                                                                 |
+| Entity           | Entity Type     | Notes                                                                                                                              |
+| ---------------- | --------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
+| `Audio`          | `switch`        | Whether recorded visitor videos will include audio.                                                                                |
+| `Battery`        | `sensor`        | Current Bird Buddy battery percentage                                                                                              |
+| `Charging`       | `binary_sensor` | Whether the Bird Buddy is currently charging                                                                                       |
+| `Off-Grid`       | `switch`        | Present and toggle Off-Grid status (owners only)                                                                                   |
+| `Power Profile`  | `select`        | Choose between the Power Profile settings the feeder reports.                                                                      |
+| `Recent Visitor` | `sensor`        | State represents the most recent visitor's bird species name, and the `entity_picture` points to the first image on that postcard. |
+| `State`          | `sensor`        | Current state (ready, offline, etc)                                                                                                |
+| `Signal`         | `sensor`        | Current wifi signal (RSSI)                                                                                                         |
+| `Update`         | `update`        | Show and install Firmware updates (owners only)                                                                                    |
 
 Some entities are disabled or hidden by default, if they represent an
 advanced use case (for example, the "Signal" and "Recent Visitor"
@@ -107,15 +107,18 @@ they arrive. Only opened postcards can be viewed in the Media Browser
 This event is fired when a new postcard is detected in the feed and Bird
 Buddy has identified its species.
 
-| Field         | Description                                                                                          |
-| ------------- | ---------------------------------------------------------------------------------------------------- |
-| `postcard_id` | Id of the postcard. Pass this to the `birdbuddy.collect_postcard` service to collect the postcard.   |
-| `feeder_id`   | Id of the feeder that captured the postcard, or `null`. Can be used to filter/target automations.    |
-| `species`     | List of recognized species (each a `{ "name", ... }` object). Empty when nothing was recognized.     |
-| `media`       | The first image on the postcard (`{ "content_url", "thumbnail_url", ... }`), or `null`.              |
+| Field         | Description                                                                                        |
+| ------------- | -------------------------------------------------------------------------------------------------- |
+| `postcard_id` | Id of the postcard. Pass this to the `birdbuddy.collect_postcard` service to collect the postcard. |
+| `feeder_id`   | Id of the feeder that captured the postcard, or `null`. Can be used to filter/target automations.  |
+| `species`     | List of recognized species (each an `{ "id", "name" }` object). Empty when nothing was recognized. |
+| `media`       | The first image on the postcard (`{ "contentUrl", "thumbnailUrl", ... }`), or `null`.              |
 
-`media.content_url` and `media.thumbnail_url` are time-sensitive URLs
-that can be used to download the postcard image.
+`media.contentUrl` and `media.thumbnailUrl` are time-sensitive URLs that
+can be used to download the postcard image. The event carries the media
+object as Bird Buddy returns it, so these keys keep the API's spelling.
+Every media item has a `thumbnailUrl`; `contentUrl` accompanies the ones
+that carry full-size content.
 
 This event can also be handled with the "A new postcard is ready" Device
 Trigger, which automatically filters to the matching feeder:

@@ -202,7 +202,8 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
         postcard_id = data[ATTR_POSTCARD_ID]
         share = data.get(ATTR_SHARE, False)
         LOGGER.debug("Calling collect_postcard: id=%s, share=%s", postcard_id, share)
-        # collect_postcard raises on failure; reaching here means success.
         collected = await self.client.collect_postcard(postcard_id, share=share)
+        # collect_postcard raises on failure, so reaching this line means the
+        # postcard was collected.
         LOGGER.info("Collected postcard %s to Media", postcard_id)
         return bool(collected)

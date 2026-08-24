@@ -47,12 +47,14 @@ def async_check_legacy_event_listeners(hass: HomeAssistant) -> None:
         ir.async_delete_issue(hass, DOMAIN, ISSUE_LEGACY_POSTCARD_EVENT)
         return
 
-    LOGGER.warning(
-        "%d listener(s) remain on %s; switch those automations to %s",
-        listeners,
-        EVENT_NEW_POSTCARD_SIGHTING_LEGACY,
-        EVENT_NEW_POSTCARD,
-    )
+    registry = ir.async_get(hass)
+    if registry.async_get_issue(DOMAIN, ISSUE_LEGACY_POSTCARD_EVENT) is None:
+        LOGGER.warning(
+            "%d listener(s) remain on %s; switch those automations to %s",
+            listeners,
+            EVENT_NEW_POSTCARD_SIGHTING_LEGACY,
+            EVENT_NEW_POSTCARD,
+        )
     ir.async_create_issue(
         hass,
         DOMAIN,
