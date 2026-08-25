@@ -5,8 +5,7 @@
         },
         "error": {
             "cannot_connect": "Failed to connect",
-            "invalid_auth": "Invalid authentication",
-            "unknown": "Unexpected error"
+            "invalid_auth": "Invalid authentication"
         },
         "step": {
             "user": {
@@ -28,6 +27,7 @@
             "power_profile": {
                 "state": {
                     "frenzy_mode": "Frenzy Mode",
+                    "ultra_frenzy_mode": "Ultra Frenzy Mode",
                     "standard_mode": "Standard Mode",
                     "power_saver_mode": "Power Saving Mode"
                 }
@@ -70,6 +70,12 @@
             "audio_enabled": {
                 "name": "Audio Enabled"
             }
+        }
+    },
+    "issues": {
+        "legacy_postcard_event": {
+            "description": "An automation or script still triggers on `{legacy_event}`, which this integration replaced with `{event}`. Update those triggers to `{event}`, whose payload carries `postcard_id`, `feeder_id`, `species` and `media`. Automations built on the \"A new postcard is ready\" device trigger continue to work and need no change.",
+            "title": "Automation uses a renamed Bird Buddy event"
         }
     }
 }

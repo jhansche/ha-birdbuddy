@@ -17,7 +17,7 @@ from pytest_homeassistant_custom_component.common import (
 from pytest_unordered import unordered
 
 from custom_components.birdbuddy import DOMAIN, device_trigger
-from custom_components.birdbuddy.const import EVENT_NEW_POSTCARD_SIGHTING
+from custom_components.birdbuddy.const import EVENT_NEW_POSTCARD
 
 
 async def setup_automation(hass, device_id, feeder_id, trigger_type):
@@ -84,8 +84,8 @@ async def test_fires_on_postcard_event(
     )
     assert await setup_automation(hass, device_entry.id, "feeder1", "new_postcard")
 
-    message = {"sighting": {"feeder": {"id": "feeder1"}}, "postcard": {}}
-    hass.bus.async_fire(EVENT_NEW_POSTCARD_SIGHTING, message)
+    message = {"feeder_id": "feeder1", "postcard_id": "pc1"}
+    hass.bus.async_fire(EVENT_NEW_POSTCARD, message)
     await hass.async_block_till_done()
     assert len(calls) == 1
     assert calls[0].data["message"] == "triggered"
@@ -97,8 +97,8 @@ async def test_does_not_fire_on_postcard_event_for_other_feeder(hass, calls):
     assert await setup_automation(hass, "deviceid", "feeder2", "new_postcard")
 
     # but our event is for `feeder1`
-    message = {"sighting": {"feeder": {"id": "feeder1"}}, "postcard": {}}
-    hass.bus.async_fire(EVENT_NEW_POSTCARD_SIGHTING, message, origin=EventOrigin.remote)
+    message = {"feeder_id": "feeder1", "postcard_id": "pc1"}
+    hass.bus.async_fire(EVENT_NEW_POSTCARD, message, origin=EventOrigin.remote)
     await hass.async_block_till_done()
     assert len(calls) == 0
 

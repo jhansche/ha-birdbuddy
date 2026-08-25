@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from birdbuddy.exceptions import GraphqlError
+from birdbuddy.exceptions import GraphqlError, NoFirmwareUpdateAvailableError
 from birdbuddy.feeder import FeederState
 from homeassistant.components.update import (
     UpdateDeviceClass,
@@ -130,6 +130,23 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
             return True
         return int(self.__update_state.progress)
 
+    def _raise_if_not_ready(self) -> None:
+        """Raise if the feeder cannot start a firmware update.
+
+        Raises:
+            HomeAssistantError: If the feeder is in a rejecting state or its
+                battery is too low.
+        """
+        if self.feeder.state in REJECT_STATES:
+            msg = f"Cannot perform update when in state {self.feeder.state.value}"
+            raise HomeAssistantError(msg)
+        if self.feeder.battery.percentage < 10 and not self.feeder.battery.is_charging:
+            msg = (
+                "Low battery, charge the Feeder first: "
+                f"{self.feeder.battery.percentage}%"
+            )
+            raise HomeAssistantError(msg)
+
     async def async_install(
         self, version: str | None, backup: bool, **kwargs: Any
     ) -> None:
@@ -148,15 +165,7 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
             msg = "A firmware update is already in progress"
             raise HomeAssistantError(msg)
 
-        if self.feeder.state in REJECT_STATES:
-            msg = f"Cannot perform update when in state {self.feeder.state.value}"
-            raise HomeAssistantError(msg)
-        if self.feeder.battery.percentage < 10 and not self.feeder.battery.is_charging:
-            msg = (
-                "Low battery, charge the Feeder first: "
-                f"{self.feeder.battery.percentage}%"
-            )
-            raise HomeAssistantError(msg)
+        self._raise_if_not_ready()
 
         if version and version != self.latest_version:
             LOGGER.warning(
@@ -167,10 +176,13 @@ class BirdBuddyUpdate(BirdBuddyMixin, UpdateEntity):
 
         try:
             result = await self.coordinator.client.update_firmware_start(self.feeder)
+        except NoFirmwareUpdateAvailableError as exc:
+            msg = "The feeder is already on the latest firmware"
+            raise HomeAssistantError(msg) from exc
         except GraphqlError as exc:
-            raise HomeAssistantError(
-                "Error starting update: " + exc.response.get("message", exc)
-            ) from exc
+            detail = exc.response.get("message") or str(exc)
+            msg = f"Error starting update: {detail}"
+            raise HomeAssistantError(msg) from exc
         self.__update_state = result
 
         errors = 0  # allow periodic transient errors

@@ -35,5 +35,11 @@
                 }
             }
         }
+    },
+    "issues": {
+        "legacy_postcard_event": {
+            "description": "En automatisering eller ett skript utl\u00f6ses fortfarande av `{legacy_event}`, som den h\u00e4r integrationen har ersatt med `{event}`. \u00c4ndra dessa utl\u00f6sare till `{event}`, vars nyttolast inneh\u00e5ller `postcard_id`, `feeder_id`, `species` och `media`. Automatiseringar som bygger p\u00e5 enhetsutl\u00f6saren \u201dA new postcard is ready\u201d forts\u00e4tter att fungera och beh\u00f6ver ingen \u00e4ndring.",
+            "title": "Automatisering anv\u00e4nder en omd\u00f6pt Bird Buddy-h\u00e4ndelse"
+        }
     }
 }

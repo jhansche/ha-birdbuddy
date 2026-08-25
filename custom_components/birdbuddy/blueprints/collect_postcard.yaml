@@ -10,28 +10,6 @@ blueprint:
       selector:
         device:
           integration: birdbuddy
-    collect_strategy:
-      name: Collection strategy
-      default: best_guess
-      selector:
-        select:
-          options:
-            - value: recognized
-              label: Only confidently recognized species
-            - value: best_guess
-              label: Select the best-guess species
-            - value: mystery
-              label: Best guess, or save as a mystery visitor
-          mode: dropdown
-    best_guess_confidence:
-      name: Best-guess confidence
-      description: Minimum confidence by the BB AI to accept a sighting.
-      default: 20
-      selector:
-        number:
-          min: 1
-          max: 100
-          unit_of_measurement: "%"
     share_media:
       name: Share Media?
       default: true
@@ -39,18 +17,15 @@ blueprint:
         boolean: {}
 
 mode: single
-trigger:
-  platform: device
-  domain: birdbuddy
-  device_id: !input feeder_device
-  type: new_postcard
-action:
+triggers:
+  - trigger: device
+    domain: birdbuddy
+    device_id: !input feeder_device
+    type: new_postcard
+actions:
   - alias: Collect a Postcard
-    service: birdbuddy.collect_postcard
-    data_template:
-      strategy: !input collect_strategy
-      best_guess_confidence: !input best_guess_confidence
-      share_media: !input share_media
-      postcard: "{{ trigger.event.data.postcard }}"
-      sighting: "{{ trigger.event.data.sighting }}"
-    enabled: true
+    action: birdbuddy.collect_postcard
+    data:
+      postcard_id: "{{ trigger.event.data.postcard_id }}"
+      feeder_id: "{{ trigger.event.data.feeder_id }}"
+      share: !input share_media

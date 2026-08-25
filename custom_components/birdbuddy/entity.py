@@ -6,7 +6,7 @@ from homeassistant.helpers.update_coordinator import CoordinatorEntity
 from .coordinator import BirdBuddyDataUpdateCoordinator, BirdBuddyDevice
 
 
-class BirdBuddyMixin(CoordinatorEntity, RestoreEntity):
+class BirdBuddyMixin(CoordinatorEntity[BirdBuddyDataUpdateCoordinator], RestoreEntity):
     """Helper for all Bird Buddy entities."""
 
     feeder: BirdBuddyDevice
@@ -27,12 +27,6 @@ class BirdBuddyMixin(CoordinatorEntity, RestoreEntity):
         self.feeder = feeder
         self._attr_device_info = feeder.device_info
 
-    def _handle_coordinator_update(self) -> None:
-        """Refresh the cached device info when the coordinator updates."""
-        if self.device_info is not None:
-            self.device_info.update(self.feeder.device_info)
-        super()._handle_coordinator_update()
-
     @property
     def entity_registry_enabled_default(self) -> bool:
         """Return whether the entity is enabled in the registry by default.
@@ -51,6 +45,7 @@ class BirdBuddyMixin(CoordinatorEntity, RestoreEntity):
         """Return whether the entity is available.
 
         Returns:
-            True while the feeder is present.
+            True while the coordinator's last update succeeded and the
+            feeder is present; entities go unavailable when polling fails.
         """
-        return self.feeder is not None
+        return super().available and self.feeder is not None

@@ -11,8 +11,7 @@
     },
     "error": {
       "cannot_connect": "[%key:common::config_flow::error::cannot_connect%]",
-      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]",
-      "unknown": "[%key:common::config_flow::error::unknown%]"
+      "invalid_auth": "[%key:common::config_flow::error::invalid_auth%]"
     },
     "abort": {
       "already_configured": "[%key:common::config_flow::abort::already_configured_device%]"
@@ -23,6 +22,7 @@
       "power_profile": {
         "state": {
           "frenzy_mode": "Frenzy Mode",
+          "ultra_frenzy_mode": "Ultra Frenzy Mode",
           "standard_mode": "Standard Mode",
           "power_saver_mode": "Power Saving Mode"
         }
@@ -70,6 +70,12 @@
   "device_automation": {
     "trigger_type": {
       "new_postcard": "A new postcard is ready"
+    }
+  },
+  "issues": {
+    "legacy_postcard_event": {
+      "title": "Automation uses a renamed Bird Buddy event",
+      "description": "An automation or script still triggers on `{legacy_event}`, which this integration replaced with `{event}`. Update those triggers to `{event}`, whose payload carries `postcard_id`, `feeder_id`, `species` and `media`. Automations built on the \"A new postcard is ready\" device trigger continue to work and need no change."
     }
   }
 }

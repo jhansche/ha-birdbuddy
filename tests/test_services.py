@@ -1,9 +1,10 @@
-"""Test the Bird Buddy config flow."""
+"""Test the Bird Buddy collect_postcard service."""
 
-from unittest.mock import ANY, patch
+import logging
+from unittest.mock import patch
 
 import aiohttp
-from birdbuddy.sightings import SightingFinishStrategy
+from birdbuddy.postcards import CollectedPostcard
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD
 from homeassistant.setup import async_setup_component
 import pytest
@@ -13,15 +14,14 @@ from voluptuous.error import MultipleInvalid
 from custom_components.birdbuddy.const import DOMAIN, SERVICE_COLLECT_POSTCARD
 
 
-async def test_services(hass):  # , config_entry):
-    """Test services."""
+async def test_collect_postcard_service(hass):
+    """The service validates its schema and calls collect_postcard."""
     config_entry = MockConfigEntry(
         domain=DOMAIN,
         data={CONF_EMAIL: "test@email", CONF_PASSWORD: "passw0rd"},
     )
     config_entry.add_to_hass(hass)
 
-    # config_entry.add_to_hass(hass)
     with patch(
         "birdbuddy.client.BirdBuddy.refresh",
         side_effect=aiohttp.ClientConnectionError("Offline"),
@@ -30,108 +30,116 @@ async def test_services(hass):  # , config_entry):
             hass, DOMAIN, {CONF_EMAIL: "test@email", CONF_PASSWORD: "passw0rd"}
         )
 
-    # Schema is checked in layers: empty object raises missing top-level keys
+    # postcard_id is required.
     with pytest.raises(MultipleInvalid) as exc_info:
         await hass.services.async_call(
-            DOMAIN,
-            SERVICE_COLLECT_POSTCARD,
-            {},
-            blocking=True,
+            DOMAIN, SERVICE_COLLECT_POSTCARD, {}, blocking=True
         )
-    assert len(exc_info.value.errors) == 2
     msgs = [str(e) for e in exc_info.value.errors]
-    assert "required key not provided @ data['postcard']" in msgs
-    assert "required key not provided @ data['sighting']" in msgs
+    assert "required key not provided @ data['postcard_id']" in msgs
 
-    # Next layer of schema
-    with pytest.raises(MultipleInvalid) as exc_info:
-        await hass.services.async_call(
-            DOMAIN,
-            SERVICE_COLLECT_POSTCARD,
-            {
-                "sighting": {},
-                "postcard": {},
-            },
-            blocking=True,
-        )
-    assert len(exc_info.value.errors) == 3
-    msgs = [str(e) for e in exc_info.value.errors]
-    assert "required key not provided @ data['sighting']['sightingReport']" in msgs
-    assert "required key not provided @ data['sighting']['feeder']" in msgs
-    assert (
-        "must contain at least one of id. for dictionary value @ "
-        "data['postcard']" in msgs
-    )
-
-    with pytest.raises(MultipleInvalid) as exc_info:
-        await hass.services.async_call(
-            DOMAIN,
-            SERVICE_COLLECT_POSTCARD,
-            {
-                "sighting": {"sightingReport": {}, "feeder": {}},
-                "postcard": {"id": "feed item id"},
-            },
-            blocking=True,
-        )
-    assert len(exc_info.value.errors) == 1
-    msgs = [str(e) for e in exc_info.value.errors]
-    assert (
-        "must contain at least one of id. for dictionary value @ "
-        "data['sighting']['feeder']" in msgs
-    )
-
+    # A valid call reaches collect_postcard with the id and the share flag.
     with patch(
-        "birdbuddy.client.BirdBuddy.finish_postcard",
-        return_value=True,
-    ) as finish_postcard_method:
+        "birdbuddy.client.BirdBuddy.collect_postcard",
+        return_value=CollectedPostcard({"id": "feed item id"}),
+    ) as collect_postcard:
         await hass.services.async_call(
             DOMAIN,
             SERVICE_COLLECT_POSTCARD,
-            {
-                "sighting": {
-                    "sightingReport": {},
-                    "feeder": {"id": "feeder id", "name": "Feeder"},
-                },
-                "postcard": {"id": "feed item id"},
-            },
+            {"postcard_id": "feed item id", "share": True},
             blocking=True,
         )
+    collect_postcard.assert_called_once_with("feed item id", share=True)
 
-        finish_postcard_method.assert_called_once_with(
-            "feed item id",
-            ANY,
-            SightingFinishStrategy.RECOGNIZED,
-            confidence_threshold=None,
-            share_media=False,
-        )
 
+async def _setup_entry(hass):
+    """Load a config entry so the service has a coordinator to reach.
+
+    Args:
+        hass: The Home Assistant instance.
+    """
+    config_entry = MockConfigEntry(
+        domain=DOMAIN,
+        data={CONF_EMAIL: "test@email", CONF_PASSWORD: "passw0rd"},
+    )
+    config_entry.add_to_hass(hass)
     with patch(
-        "birdbuddy.client.BirdBuddy.finish_postcard",
-        return_value=True,
-    ) as finish_postcard_method:
+        "birdbuddy.client.BirdBuddy.refresh",
+        side_effect=aiohttp.ClientConnectionError("Offline"),
+    ):
+        assert await async_setup_component(
+            hass, DOMAIN, {CONF_EMAIL: "test@email", CONF_PASSWORD: "passw0rd"}
+        )
+
+
+def _feeder_warnings(caplog):
+    """Return the warnings the service logged about a named feeder.
+
+    Args:
+        caplog: The pytest log capture fixture.
+
+    Returns:
+        The matching log records.
+    """
+    return [
+        r
+        for r in caplog.records
+        if r.levelno == logging.WARNING and "Feeder with id" in r.getMessage()
+    ]
+
+
+async def test_collect_postcard_without_a_feeder_id_stays_quiet(hass, caplog):
+    """Omitting the optional feeder_id reaches the first account silently.
+
+    services.yaml documents feeder_id as optional, so the call that leaves it
+    out takes the documented path and belongs in the log at debug level.
+    """
+    await _setup_entry(hass)
+
+    with (
+        caplog.at_level(logging.WARNING),
+        patch(
+            "birdbuddy.client.BirdBuddy.collect_postcard",
+            return_value=CollectedPostcard({"id": "feed item id"}),
+        ) as collect_postcard,
+    ):
         await hass.services.async_call(
             DOMAIN,
             SERVICE_COLLECT_POSTCARD,
-            {
-                "sighting": {
-                    "sightingReport": {},
-                    "feeder": {"id": "feeder id", "name": "Feeder"},
-                },
-                "postcard": {"id": "feed item id"},
-                "strategy": "mystery",
-                "best_guess_confidence": 7,
-                "share_media": True,
-            },
+            {"postcard_id": "feed item id"},
             blocking=True,
         )
 
-        finish_postcard_method.assert_called_once_with(
-            "feed item id",
-            ANY,
-            SightingFinishStrategy.MYSTERY,
-            confidence_threshold=7,
-            share_media=True,
+    collect_postcard.assert_called_once_with("feed item id", share=False)
+    assert _feeder_warnings(caplog) == []
+
+
+async def test_collect_postcard_warns_for_an_unknown_feeder(hass, caplog):
+    """A named feeder no account holds falls back and names the substitute.
+
+    A feeder keeps its owner and takes a new id when it is factory reset and
+    re-paired, so an automation holding the old id arrives here.
+    """
+    await _setup_entry(hass)
+
+    with (
+        caplog.at_level(logging.WARNING),
+        patch(
+            "birdbuddy.client.BirdBuddy.collect_postcard",
+            return_value=CollectedPostcard({"id": "feed item id"}),
+        ) as collect_postcard,
+    ):
+        await hass.services.async_call(
+            DOMAIN,
+            SERVICE_COLLECT_POSTCARD,
+            {"postcard_id": "feed item id", "feeder_id": "retired feeder"},
+            blocking=True,
         )
+
+    collect_postcard.assert_called_once_with("feed item id", share=False)
+    warnings = _feeder_warnings(caplog)
+    assert len(warnings) == 1
+    assert "retired feeder" in warnings[0].getMessage()
 
 
 async def test_collect_postcard_before_any_entry_loads(hass):
@@ -148,12 +156,6 @@ async def test_collect_postcard_before_any_entry_loads(hass):
         await hass.services.async_call(
             DOMAIN,
             SERVICE_COLLECT_POSTCARD,
-            {
-                "sighting": {
-                    "sightingReport": {},
-                    "feeder": {"id": "feeder id", "name": "Feeder"},
-                },
-                "postcard": {"id": "feed item id"},
-            },
+            {"postcard_id": "feed item id"},
             blocking=True,
         )

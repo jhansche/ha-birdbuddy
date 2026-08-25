@@ -5,8 +5,7 @@
         },
         "error": {
             "cannot_connect": "Verbindung fehlgeschlagen",
-            "invalid_auth": "Ung\u00fcltige Authentifizierung",
-            "unknown": "Unerwarteter Fehler"
+            "invalid_auth": "Ung\u00fcltige Authentifizierung"
         },
         "step": {
             "user": {
@@ -58,6 +57,12 @@
                     "medium": "Mittel"
                 }
             }
+        }
+    },
+    "issues": {
+        "legacy_postcard_event": {
+            "description": "Eine Automatisierung oder ein Skript wird noch durch `{legacy_event}` ausgelöst, das diese Integration durch `{event}` ersetzt hat. Stelle diese Auslöser auf `{event}` um, dessen Nutzdaten `postcard_id`, `feeder_id`, `species` und `media` enthalten. Automatisierungen mit dem Geräte-Auslöser „Eine neue Postkarte ist bereit“ funktionieren weiterhin und benötigen keine Änderung.",
+            "title": "Automatisierung verwendet ein umbenanntes Bird Buddy-Ereignis"
         }
     }
 }
