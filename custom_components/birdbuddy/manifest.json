@@ -19,6 +19,6 @@
     "pybirdbuddy==0.1.0"
   ],
   "ssdp": [],
-  "version": "0.0.25",
+  "version": "0.1.0",
   "zeroconf": []
 }
