@@ -1,6 +1,7 @@
 """Tests for the Bird Buddy coordinator."""
 
 import json
+from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock
 
 from birdbuddy.exceptions import GraphqlError
@@ -11,29 +12,8 @@ from pytest_homeassistant_custom_component.common import MockConfigEntry
 from custom_components.birdbuddy.const import DOMAIN, EVENT_NEW_POSTCARD
 from custom_components.birdbuddy.coordinator import BirdBuddyDataUpdateCoordinator
 
-_ANALYSIS = PostcardAnalysis(
-    {
-        "id": "pc1",
-        "feeder": {"__typename": "Feeder", "id": "feeder1"},
-        "medias": [
-            {
-                "__typename": "MediaImage",
-                "id": "m1",
-                "createdAt": "2026-07-09T12:00:00.000Z",
-                "thumbnailUrl": "https://example.invalid/t.jpg",
-                "contentUrl": "https://example.invalid/c.jpg",
-            }
-        ],
-        "sightingReportPreview": {
-            "sightings": [
-                {
-                    "__typename": "SightingRecognizedBird",
-                    "species": {"id": "s1", "name": "American Robin"},
-                }
-            ]
-        },
-    }
-)
+_FIXTURE = Path(__file__).parent / "fixtures" / "reanalyze_postcard.json"
+_ANALYSIS = PostcardAnalysis(json.loads(_FIXTURE.read_text()))
 
 
 async def test_process_feed_fires_slim_event(hass):
@@ -47,18 +27,27 @@ async def test_process_feed_fires_slim_event(hass):
     events = []
     hass.bus.async_listen(EVENT_NEW_POSTCARD, events.append)
 
-    postcard = FeedNode({"__typename": "FeedItemNewPostcard", "id": "pc1"})
+    postcard = FeedNode({"__typename": "FeedItemNewPostcard", "id": _ANALYSIS.id})
     await coordinator._process_feed([postcard])
     await hass.async_block_till_done()
 
     client.identify_postcard.assert_awaited_once_with(postcard)
     assert len(events) == 1
     data = events[0].data
-    assert data["postcard_id"] == "pc1"
-    assert data["feeder_id"] == "feeder1"
-    assert data["species"] == [{"id": "s1", "name": "American Robin"}]
-    assert data["media"]["contentUrl"] == "https://example.invalid/c.jpg"
-    # Issue #78: the event must stay under HA's recorder size limit.
+    assert data["postcard_id"] == "12c5ca14-3120-5c08-9113-ae79a1ef48d5"
+    assert data["feeder_id"] == "33149978-ad92-5752-b6e5-1580b262ccf9"
+    assert data["species"] == [
+        {
+            "__typename": "SpeciesBird",
+            "id": "3cfcfa55-3081-586c-a9f7-8e885cbf2e19",
+            "name": "California Scrub-Jay",
+        }
+    ]
+    assert data["medias"] == _ANALYSIS["medias"]
+    assert data["medias"][5]["__typename"] == "MediaVideo"
+    assert data["media"] == data["medias"][0]
+    # The recorder drops event data past 32768 bytes. The fixture's URLs are
+    # sanitized short, so this guards the key set and the media count.
     assert len(json.dumps(data)) < 32768
 
 
@@ -98,7 +87,7 @@ async def test_a_rejected_postcard_leaves_the_poll_successful(hass):
     client.refresh_feed = AsyncMock(
         return_value=[
             FeedNode({"__typename": "FeedItemNewPostcard", "id": "bad"}),
-            FeedNode({"__typename": "FeedItemNewPostcard", "id": "pc1"}),
+            FeedNode({"__typename": "FeedItemNewPostcard", "id": _ANALYSIS.id}),
         ]
     )
     client.identify_postcard = AsyncMock(side_effect=[error, _ANALYSIS])
@@ -115,7 +104,7 @@ async def test_a_rejected_postcard_leaves_the_poll_successful(hass):
 
     assert client.identify_postcard.await_count == 2
     assert len(events) == 1
-    assert events[0].data["postcard_id"] == "pc1"
+    assert events[0].data["postcard_id"] == _ANALYSIS.id
 
 
 async def test_handle_collect_postcard(hass):

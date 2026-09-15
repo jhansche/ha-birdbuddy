@@ -20,6 +20,7 @@ from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, Upda
 from .const import (
     ATTR_FEEDER_ID,
     ATTR_MEDIA,
+    ATTR_MEDIAS,
     ATTR_POSTCARD_ID,
     ATTR_SHARE,
     ATTR_SPECIES,
@@ -85,10 +86,10 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
         """Process new feed items, emitting an event per new postcard.
 
         For each new postcard, run the AI identification with
-        ``BirdBuddy.identify_postcard`` and fire a slim
-        ``birdbuddy_new_postcard`` event carrying the recognized species and
-        media. Collecting is left to the user's automations, via the
-        ``birdbuddy.collect_postcard`` service.
+        ``BirdBuddy.identify_postcard`` and fire the recognized species and
+        every image and video on the postcard as a ``birdbuddy_new_postcard``
+        event. Automations collect via the ``birdbuddy.collect_postcard``
+        service.
 
         A postcard the server refuses to identify is logged and skipped, so
         the entities that read the account data stay available.
@@ -118,9 +119,10 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
                 LOGGER.debug("No event listeners: skipping postcard identification")
                 continue
 
-            # Identify the visitor (species + media) without collecting, then
-            # fire a slim event. Automations collect via the service; the
-            # payload stays small enough for HA's 32 KiB event limit.
+            # Identify the visitor, then fire the recognized species and every
+            # image and video on the postcard as the event data. Automations
+            # collect via the service; the payload stays under HA's 32 KiB
+            # event limit.
             try:
                 analysis = await self.client.identify_postcard(postcard)
             except CompositeException, GraphqlError, UnexpectedResponseError:
@@ -129,12 +131,13 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
                 # the poll successful and carry on with the next postcard.
                 LOGGER.exception("Could not identify postcard %s", postcard.node_id)
                 continue
-            media = next(iter(analysis.medias), None)
+            medias = [dict(m) for m in analysis.medias]
             data = {
                 ATTR_POSTCARD_ID: analysis.id,
                 ATTR_FEEDER_ID: (analysis.feeder.id if analysis.feeder else None),
                 ATTR_SPECIES: [dict(s) for s in analysis.species],
-                ATTR_MEDIA: dict(media) if media else None,
+                ATTR_MEDIA: medias[0] if medias else None,
+                ATTR_MEDIAS: medias,
             }
             self.hass.bus.async_fire(
                 event_type=EVENT_NEW_POSTCARD,

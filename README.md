@@ -111,14 +111,15 @@ Buddy has identified its species.
 | ------------- | -------------------------------------------------------------------------------------------------- |
 | `postcard_id` | Id of the postcard. Pass this to the `birdbuddy.collect_postcard` service to collect the postcard. |
 | `feeder_id`   | Id of the feeder that captured the postcard, or `null`. Can be used to filter/target automations.  |
-| `species`     | List of recognized species (each an `{ "id", "name" }` object). Empty when nothing was recognized. |
-| `media`       | The first image on the postcard (`{ "contentUrl", "thumbnailUrl", ... }`), or `null`.              |
+| `species`     | Recognized species, each `{ "__typename", "id", "name" }`. Empty when nothing was recognized.      |
+| `media`       | The first entry of `medias`, or `null`. Kept for automations written against v0.1.0.               |
+| `medias`      | Every image and video on the postcard; each entry's `__typename` is `MediaImage` or `MediaVideo`.  |
 
-`media.contentUrl` and `media.thumbnailUrl` are time-sensitive URLs that
-can be used to download the postcard image. The event carries the media
-object as Bird Buddy returns it, so these keys keep the API's spelling.
-Every media item has a `thumbnailUrl`; `contentUrl` accompanies the ones
-that carry full-size content.
+Each entry's `contentUrl` and `thumbnailUrl` are time-sensitive URLs that
+can be used to download the image or video. The event passes each media
+object through as Bird Buddy returns it, so these keys keep the API's
+spelling. Every entry has a `thumbnailUrl`; `MediaImage` and `MediaVideo`
+entries also have a `contentUrl`.
 
 This event can also be handled with the "A new postcard is ready" Device
 Trigger, which automatically filters to the matching feeder:
@@ -207,9 +208,9 @@ over untouched, since the trigger resolves the event internally. Automations
 that reference the event or the service directly need updating:
 
 - `birdbuddy_new_postcard_sighting` — renamed to
-  [`birdbuddy_new_postcard`](#birdbuddy_new_postcard). The payload carries
-  `postcard_id`, `feeder_id`, `species`, and `media` in place of the
-  `postcard` and `sighting` report objects.
+  [`birdbuddy_new_postcard`](#birdbuddy_new_postcard). The event data is
+  `postcard_id`, `feeder_id`, `species`, `media`, and `medias` in place of
+  the `postcard` and `sighting` report objects.
 - `birdbuddy.collect_postcard` — takes `postcard_id`, plus optional
   `feeder_id` and `share`, in place of the `postcard` and `sighting`
   objects. Bird Buddy identifies species server-side, so the schema now
