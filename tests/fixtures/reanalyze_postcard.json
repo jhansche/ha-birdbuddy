@@ -1,0 +1,70 @@
+{
+  "__typename": "FeedItemNewPostcard",
+  "id": "12c5ca14-3120-5c08-9113-ae79a1ef48d5",
+  "createdAt": "2026-07-09T19:42:32.473Z",
+  "inferenceConfidenceLevel": "LOW_CONFIDENCE",
+  "inferenceExecutionMode": "MANUAL_COMPLETED",
+  "inferenceType": "ADVANCED",
+  "reanalyzeAvailability": "ALREADY_REANALYZED",
+  "feeder": {
+    "__typename": "FeederForOwner",
+    "id": "33149978-ad92-5752-b6e5-1580b262ccf9",
+    "name": "Test Bird Buddy"
+  },
+  "medias": [
+    {
+      "__typename": "MediaImage",
+      "id": "20d40dce-3a42-595d-8459-447f9d3a42aa",
+      "createdAt": "2026-07-09T19:41:20.000Z",
+      "thumbnailUrl": "https://example.invalid/asset",
+      "contentUrl": "https://example.invalid/asset"
+    },
+    {
+      "__typename": "MediaImage",
+      "id": "2997fcec-27fd-5164-9603-da0849d008b8",
+      "createdAt": "2026-07-09T19:41:42.000Z",
+      "thumbnailUrl": "https://example.invalid/asset",
+      "contentUrl": "https://example.invalid/asset"
+    },
+    {
+      "__typename": "MediaImage",
+      "id": "27e02700-2061-5dd4-9501-a4f66942b629",
+      "createdAt": "2026-07-09T19:41:56.000Z",
+      "thumbnailUrl": "https://example.invalid/asset",
+      "contentUrl": "https://example.invalid/asset"
+    },
+    {
+      "__typename": "MediaImage",
+      "id": "8c62f06e-89af-5c94-8fbe-c7ac9c005c07",
+      "createdAt": "2026-07-09T19:41:58.000Z",
+      "thumbnailUrl": "https://example.invalid/asset",
+      "contentUrl": "https://example.invalid/asset"
+    },
+    {
+      "__typename": "MediaImage",
+      "id": "359f27e7-2683-5ec4-a5f8-a7ce5d733c4d",
+      "createdAt": "2026-07-09T19:42:17.000Z",
+      "thumbnailUrl": "https://example.invalid/asset",
+      "contentUrl": "https://example.invalid/asset"
+    },
+    {
+      "__typename": "MediaVideo",
+      "id": "40dc9347-6b1b-539f-b3ef-30d92172d903",
+      "createdAt": "2026-07-09T19:41:21.000Z",
+      "thumbnailUrl": "https://example.invalid/asset",
+      "contentUrl": "https://example.invalid/asset"
+    }
+  ],
+  "sightingReportPreview": {
+    "sightings": [
+      {
+        "__typename": "SightingRecognizedBird",
+        "species": {
+          "__typename": "SpeciesBird",
+          "id": "3cfcfa55-3081-586c-a9f7-8e885cbf2e19",
+          "name": "California Scrub-Jay"
+        }
+      }
+    ]
+  }
+}

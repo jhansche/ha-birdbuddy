@@ -25,6 +25,7 @@ ATTR_POSTCARD_ID = "postcard_id"
 ATTR_SHARE = "share"
 ATTR_SPECIES = "species"
 ATTR_MEDIA = "media"
+ATTR_MEDIAS = "medias"
 
 TRIGGER_TYPE_POSTCARD = "new_postcard"
 EVENT_NEW_POSTCARD = f"{DOMAIN}_new_postcard"
