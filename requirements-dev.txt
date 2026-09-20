@@ -21,7 +21,7 @@
 pytest-homeassistant-custom-component == 0.13.345
 
 # Linters / type-checker, independent of the HA version.
-ruff ~= 0.16.6
+ruff ~= 0.16.8
 pyright ~= 1.1.414
 
 # The integration's runtime library (also pinned in manifest.json), installed
