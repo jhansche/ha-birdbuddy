@@ -16,9 +16,11 @@ from homeassistant.exceptions import OAuth2TokenRequestError
 from homeassistant.helpers import config_entry_oauth2_flow
 import voluptuous as vol
 
+from .archive import normalize_folder
 from .const import (
     AUTH_EMAIL,
     AUTH_GOOGLE,
+    CONF_ARCHIVE_FOLDER,
     CONF_AUTH_METHOD,
     CONF_REFRESH_TOKEN,
     CONF_USER_ID,
@@ -36,6 +38,21 @@ class ConfigFlow(config_entry_oauth2_flow.AbstractOAuth2FlowHandler, domain=DOMA
 
     DOMAIN = DOMAIN
     VERSION = 2
+
+    @staticmethod
+    def async_get_options_flow(
+        config_entry: config_entries.ConfigEntry,  # noqa: ARG004
+    ) -> OptionsFlowHandler:
+        """Return the options flow.
+
+        Args:
+            config_entry: The entry; Home Assistant passes it, and the flow
+                reads it from ``self.config_entry``.
+
+        Returns:
+            The options flow handler.
+        """
+        return OptionsFlowHandler()
 
     @property
     def logger(self) -> logging.Logger:
@@ -187,3 +204,30 @@ class ConfigFlow(config_entry_oauth2_flow.AbstractOAuth2FlowHandler, domain=DOMA
         if self._get_reauth_entry().data.get(CONF_AUTH_METHOD) == AUTH_GOOGLE:
             return await self.async_step_google()
         return await self.async_step_email()
+
+
+class OptionsFlowHandler(config_entries.OptionsFlow):
+    """Set where every visit's photos, videos and species are kept."""
+
+    async def async_step_init(
+        self, user_input: dict[str, Any] | None = None
+    ) -> config_entries.ConfigFlowResult:
+        """Ask for the archive folder; blank turns the archive off."""
+        errors: dict[str, str] = {}
+        current = self.config_entry.options.get(CONF_ARCHIVE_FOLDER, "")
+        if user_input is not None:
+            folder = normalize_folder(user_input.get(CONF_ARCHIVE_FOLDER))
+            if folder and not folder.startswith("/"):
+                errors[CONF_ARCHIVE_FOLDER] = "not_absolute"
+            elif folder and not self.hass.config.is_allowed_path(folder):
+                errors[CONF_ARCHIVE_FOLDER] = "not_allowed"
+            else:
+                return self.async_create_entry(data={CONF_ARCHIVE_FOLDER: folder})
+            current = folder
+        return self.async_show_form(
+            step_id="init",
+            data_schema=vol.Schema(
+                {vol.Optional(CONF_ARCHIVE_FOLDER, default=current): str}
+            ),
+            errors=errors,
+        )

@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timedelta
 from typing import Any
 
 from birdbuddy.client import BirdBuddy
@@ -16,18 +16,22 @@ from birdbuddy.exceptions import (
 from birdbuddy.feed import FeedNode, FeedNodeType
 from birdbuddy.feeder import Feeder
 from birdbuddy.media import Collection
+from birdbuddy.postcards import PostcardAnalysis
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.core import CALLBACK_TYPE, EventOrigin, HomeAssistant
-from homeassistant.exceptions import ConfigEntryAuthFailed
+from homeassistant.exceptions import ConfigEntryAuthFailed, HomeAssistantError
 from homeassistant.helpers.storage import Store
 from homeassistant.helpers.update_coordinator import DataUpdateCoordinator, UpdateFailed
+import homeassistant.util.dt as dt_util
 
+from .archive import PostcardArchive, get_archive
 from .const import (
     ATTR_FEEDER_ID,
     ATTR_MEDIA,
     ATTR_POSTCARD_ID,
     ATTR_SHARE,
     ATTR_SPECIES,
+    CONF_ARCHIVE_FOLDER,
     DOMAIN,
     EVENT_NEW_POSTCARD,
     LOGGER,
@@ -38,6 +42,10 @@ from .repairs import async_check_legacy_event_listeners
 from .visitors import RecentVisitors, VisitorCallback
 
 FEED_CURSOR_STORE_VERSION = 1
+ARCHIVE_RETRY_STORE_VERSION = 1
+# How long a postcard whose archive save failed keeps being retried. Bird
+# Buddy keeps uncollected postcards in the feed for about this long.
+ARCHIVE_RETRY_FOR = timedelta(days=7)
 
 
 class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
@@ -62,6 +70,11 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
             entry: The config entry this coordinator serves.
         """
         self.client = client
+        self.archive: PostcardArchive | None = (
+            get_archive(hass, folder)
+            if (folder := entry.options.get(CONF_ARCHIVE_FOLDER))
+            else None
+        )
         self.feeders = {}
         self.visitors = {}
         self.first_update = True
@@ -72,6 +85,15 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
         self._feed_cursor_loaded = False
         self._feed_cursor: Store[dict[str, Any]] = Store(
             hass, FEED_CURSOR_STORE_VERSION, f"{DOMAIN}.{entry.entry_id}.feed_cursor"
+        )
+        # Postcards whose archive save is incomplete, by id, with when it
+        # first failed. Kept apart from the feed cursor, so a retry never
+        # fires the postcard event again.
+        self._archive_retry: dict[str, str] | None = None
+        self._archive_retry_store: Store[dict[str, Any]] = Store(
+            hass,
+            ARCHIVE_RETRY_STORE_VERSION,
+            f"{DOMAIN}.{entry.entry_id}.archive_retry",
         )
         super().__init__(
             hass,
@@ -101,10 +123,10 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
         """Process new feed items, emitting an event per new postcard.
 
         For each new postcard, run the AI identification with
-        ``BirdBuddy.identify_postcard`` and fire a slim
-        ``birdbuddy_new_postcard`` event carrying the recognized species and
-        media. Collecting is left to the user's automations, via the
-        ``birdbuddy.collect_postcard`` service.
+        ``BirdBuddy.identify_postcard``, save the visit to the archive when
+        one is set up, and fire a slim ``birdbuddy_new_postcard`` event
+        carrying the recognized species and media. Collecting is left to the
+        user's automations, via the ``birdbuddy.collect_postcard`` service.
 
         A postcard the server refuses to identify is logged and skipped, so
         the entities that read the account data stay available.
@@ -129,8 +151,11 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
         LOGGER.debug("Found postcards %s", postcards)
         for postcard in postcards:
             LOGGER.debug("A new postcard is ready to process: %s", postcard)
-            if not self.hass.bus.async_listeners().get(EVENT_NEW_POSTCARD):
-                # No listeners, so skip the identify API call.
+            has_listeners = bool(
+                self.hass.bus.async_listeners().get(EVENT_NEW_POSTCARD)
+            )
+            if not has_listeners and self.archive is None:
+                # Nothing would use the result, so skip the identify API call.
                 LOGGER.debug("No event listeners: skipping postcard identification")
                 continue
 
@@ -144,6 +169,11 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
                 # reads the account data the refresh already returned, so keep
                 # the poll successful and carry on with the next postcard.
                 LOGGER.exception("Could not identify postcard %s", postcard.node_id)
+                await self._async_add_retry(postcard.node_id)
+                continue
+            if self.archive is not None:
+                await self.async_archive_postcard(analysis)
+            if not has_listeners:
                 continue
             media = next(iter(analysis.medias), None)
             data = {
@@ -157,6 +187,145 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
                 event_data=data,
                 origin=EventOrigin.remote,
             )
+
+    async def async_archive_postcard(self, analysis: PostcardAnalysis) -> list[str]:
+        """Save an identified postcard to the archive.
+
+        A failed save is logged rather than raised, so the poll and the
+        event still go ahead.
+
+        Args:
+            analysis: The identified postcard.
+
+        Returns:
+            The newly written files, relative to the archive folder.
+        """
+        if self.archive is None:
+            return []
+        feeder = analysis.feeder
+        feeder_name = (
+            known.name
+            if feeder and (known := self.client.feeders.get(feeder.id))
+            else None
+        )
+        written: list[str] = []
+        try:
+            written = await self.archive.async_save_postcard(analysis, feeder_name)
+        except OSError as err:
+            LOGGER.warning("Could not archive postcard %s: %s", analysis.id, err)
+        if written:
+            LOGGER.debug("Archived postcard %s: %s", analysis.id, written)
+        await self._async_track_archive(analysis)
+        return written
+
+    async def _async_retry_pending(self) -> dict[str, str]:
+        """Load the archive retry list once.
+
+        Returns:
+            Postcard id to when its save first failed (ISO time).
+        """
+        pending = self._archive_retry
+        if pending is None:
+            stored = await self._archive_retry_store.async_load()
+            pending = dict((stored or {}).get("pending") or {})
+            self._archive_retry = pending
+        return pending
+
+    async def _async_add_retry(self, postcard_id: str) -> None:
+        """Put a postcard on the retry list, when the archive is on.
+
+        Args:
+            postcard_id: The postcard's feed-item id.
+        """
+        if self.archive is None:
+            return
+        pending = await self._async_retry_pending()
+        if postcard_id not in pending:
+            pending[postcard_id] = dt_util.utcnow().isoformat()
+            await self._archive_retry_store.async_save({"pending": pending})
+
+    async def _async_track_archive(self, analysis: PostcardAnalysis) -> None:
+        """Add an incompletely saved postcard to the retry list, or clear it.
+
+        Args:
+            analysis: The postcard that was just saved.
+        """
+        if self.archive is None:
+            return
+        pending = await self._async_retry_pending()
+        try:
+            complete = await self.archive.async_is_complete(analysis)
+        except OSError as err:
+            LOGGER.warning("Could not read the archive index: %s", err)
+            complete = False
+        if not complete:
+            await self._async_add_retry(analysis.id)
+        elif analysis.id in pending:
+            del pending[analysis.id]
+            await self._archive_retry_store.async_save({"pending": pending})
+
+    async def _async_retry_archive(self) -> None:
+        """Try again to save postcards whose earlier save was incomplete.
+
+        Gives up on a postcard a week after its first failure. Identifying a
+        postcard again returns fresh media links and doesn't fire the event.
+        """
+        if self.archive is None:
+            return
+        pending = await self._async_retry_pending()
+        cutoff = dt_util.utcnow() - ARCHIVE_RETRY_FOR
+        for postcard_id, since in list(pending.items()):
+            first = dt_util.parse_datetime(since)
+            if first is None or first < cutoff:
+                LOGGER.warning("Giving up archiving postcard %s", postcard_id)
+                del pending[postcard_id]
+                await self._archive_retry_store.async_save({"pending": pending})
+                continue
+            try:
+                analysis = await self.client.identify_postcard(postcard_id)
+            except CompositeException, GraphqlError, UnexpectedResponseError:
+                LOGGER.debug("Could not identify postcard %s for a retry", postcard_id)
+                continue
+            await self.async_archive_postcard(analysis)
+
+    async def async_archive_history(self) -> dict[str, int]:
+        """Save everything Bird Buddy still holds to the archive.
+
+        Covers every species collection and the postcards still in the feed.
+        Items already saved are skipped, so this can run again safely.
+
+        Returns:
+            How many files were saved from the collections and the feed.
+
+        Raises:
+            HomeAssistantError: If the archive isn't set up.
+        """
+        if self.archive is None:
+            msg = "Set an archive folder in the Bird Buddy options first"
+            raise HomeAssistantError(msg)
+        counts = {"collections": 0, "postcards": 0}
+        collections = await self.client.refresh_collections()
+        for collection in collections.values():
+            medias = await self.client.collection(collection.collection_id)
+            try:
+                written = await self.archive.async_save_collection(
+                    collection, list(medias.values())
+                )
+            except OSError as err:
+                LOGGER.warning(
+                    "Could not archive collection %s: %s", collection.bird_name, err
+                )
+                continue
+            counts["collections"] += len(written)
+        for postcard in await self.client.new_postcards():
+            try:
+                analysis = await self.client.identify_postcard(postcard)
+            except CompositeException, GraphqlError, UnexpectedResponseError:
+                LOGGER.exception("Could not identify postcard %s", postcard.node_id)
+                continue
+            counts["postcards"] += len(await self.async_archive_postcard(analysis))
+        LOGGER.info("Bird Buddy archive backfill saved %s", counts)
+        return counts
 
     async def _refresh_feed(self) -> None:
         """Process the feed items newer than the saved cursor, then advance it.
@@ -205,6 +374,7 @@ class BirdBuddyDataUpdateCoordinator(DataUpdateCoordinator[BirdBuddy]):
             # This delays the first postcard handling until the next update.
             if not self.first_update:
                 await self._refresh_feed()
+                await self._async_retry_archive()
         except (AuthenticationFailedError, AuthTokenExpiredError) as exc:
             msg = "Bird Buddy sign-in must be renewed"
             raise ConfigEntryAuthFailed(msg) from exc

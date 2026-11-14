@@ -6,20 +6,31 @@ from birdbuddy.auth import AuthTokens
 from birdbuddy.client import BirdBuddy
 from homeassistant.config_entries import ConfigEntry
 from homeassistant.const import CONF_EMAIL, CONF_PASSWORD, Platform
-from homeassistant.core import HomeAssistant, ServiceCall
+from homeassistant.core import (
+    HomeAssistant,
+    ServiceCall,
+    ServiceResponse,
+    SupportsResponse,
+)
+from homeassistant.exceptions import HomeAssistantError
 import homeassistant.helpers.config_validation as cv
 from homeassistant.helpers.device_registry import DeviceEntry
 from homeassistant.helpers.typing import ConfigType
+from homeassistant.util.json import JsonValueType
 
+from .archive import normalize_folder
 from .const import (
     ATTR_FEEDER_ID,
     AUTH_EMAIL,
     AUTH_GOOGLE,
+    CONF_ARCHIVE_FOLDER,
     CONF_AUTH_METHOD,
     CONF_REFRESH_TOKEN,
     DOMAIN,
     LOGGER,
+    SERVICE_ARCHIVE_HISTORY,
     SERVICE_COLLECT_POSTCARD,
+    SERVICE_SCHEMA_ARCHIVE_HISTORY,
     SERVICE_SCHEMA_COLLECT_POSTCARD,
 )
 from .coordinator import BirdBuddyDataUpdateCoordinator
@@ -94,8 +105,25 @@ async def async_setup_entry(
         entry,
         PLATFORMS,
     )
+    entry.async_on_unload(entry.add_update_listener(_async_options_updated))
 
     return True
+
+
+async def _async_options_updated(hass: HomeAssistant, entry: ConfigEntry) -> None:
+    """Reload the entry when the archive folder changes.
+
+    Every entry update calls this, including the token rotation that
+    ``save_tokens`` writes, so only a changed folder reloads.
+    """
+    coordinator: BirdBuddyDataUpdateCoordinator | None = hass.data.get(DOMAIN, {}).get(
+        entry.entry_id
+    )
+    running = (
+        str(coordinator.archive.folder) if coordinator and coordinator.archive else ""
+    )
+    if normalize_folder(entry.options.get(CONF_ARCHIVE_FOLDER)) != running:
+        await hass.config_entries.async_reload(entry.entry_id)
 
 
 async def async_migrate_entry(hass: HomeAssistant, entry: ConfigEntry) -> bool:
@@ -193,4 +221,41 @@ def _setup_services(hass: HomeAssistant) -> None:
         SERVICE_COLLECT_POSTCARD,
         handle_collect_postcard,
         schema=SERVICE_SCHEMA_COLLECT_POSTCARD,
+    )
+
+    async def handle_archive_history(service: ServiceCall) -> ServiceResponse:
+        """Handle a ``birdbuddy.archive_history`` service call.
+
+        Saves every collection and the postcards still in the feed, for each
+        account that has an archive folder.
+
+        Args:
+            service: The service call.
+
+        Returns:
+            How many files were saved, per account.
+
+        Raises:
+            HomeAssistantError: If no account has an archive folder.
+        """
+        coordinators = [
+            c
+            for c in hass.data.get(DOMAIN, {}).values()
+            if isinstance(c, BirdBuddyDataUpdateCoordinator) and c.archive
+        ]
+        if not coordinators:
+            msg = "Set an archive folder in the Bird Buddy options first"
+            raise HomeAssistantError(msg)
+        response: dict[str, JsonValueType] = {}
+        for c in coordinators:
+            counts = await c.async_archive_history()
+            response[c.config_entry.title or c.config_entry.entry_id] = dict(counts)
+        return response
+
+    hass.services.async_register(
+        DOMAIN,
+        SERVICE_ARCHIVE_HISTORY,
+        handle_archive_history,
+        schema=SERVICE_SCHEMA_ARCHIVE_HISTORY,
+        supports_response=SupportsResponse.OPTIONAL,
     )

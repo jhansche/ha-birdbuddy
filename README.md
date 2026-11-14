@@ -133,6 +133,26 @@ postcard you will need to use the mobile app to open the postcards as
 they arrive. Only opened postcards can be viewed in the Media Browser
 (same as the Collections tab in the Bird Buddy app).
 
+### Archive
+
+Bird Buddy's media links expire after a day, and postcards you don't collect
+leave the feed within days. To keep every visit, set an **Archive folder** in
+the integration's options (**Configure** on the Bird Buddy entry), for example
+`/media/birdbuddy`. Each new postcard is then identified and saved there,
+whether or not you collect it:
+
+```text
+/media/birdbuddy/2026/11/14/08-14-02 American Robin.jpg
+/media/birdbuddy/2026/11/14/08-14-02 American Robin.mp4
+/media/birdbuddy/2026/11/14/08-14-02 American Robin.json
+```
+
+The JSON file holds the species, the confidence, the feeder and the visit's
+files. A folder
+under `/media` shows up in the Media panel under **My media**. Leave the
+option blank to turn the archive off. To save what Bird Buddy already holds,
+run the `birdbuddy.archive_history` action once (see below).
+
 ## Events
 
 ### `birdbuddy_new_postcard`
@@ -232,6 +252,13 @@ After the Blueprint has been imported, you still need to
 Also note that if we update the Blueprint here, your imported Blueprint
 will not automatically receive the update, and you may need to re-import
 it to get the update.
+
+### `birdbuddy.archive_history`
+
+Saves every photo and video in your Bird Buddy collections, and every
+postcard still in the feed, to the archive folder. Anything already saved is
+skipped, so it is safe to run again. It returns how many files were saved.
+It needs an **Archive folder** in the integration's options.
 
 ## Breaking changes
 

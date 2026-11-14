@@ -27,3 +27,9 @@ collect_postcard:
       example: false
       selector:
         boolean:
+
+archive_history:
+  name: Archive history
+  description: Save every photo and video still in your Bird Buddy collections
+    and feed to the archive folder set in the integration's options. Items
+    already saved are skipped.

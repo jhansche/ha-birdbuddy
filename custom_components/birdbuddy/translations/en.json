@@ -110,5 +110,23 @@
     },
     "application_credentials": {
         "description": "Create a Web application OAuth client in [Google Cloud]({console_url}). Add the redirect URL shown by Home Assistant to its authorized redirect URIs. Request only email identity access. Your Bird Buddy account must already be linked to Google."
+    },
+    "options": {
+        "step": {
+            "init": {
+                "title": "Bird Buddy archive",
+                "description": "Every visit's photos, videos and species are saved in this folder, in YYYY/MM/DD folders. Use a folder under /media to browse it in the Media panel. Leave blank to turn the archive off.",
+                "data": {
+                    "archive_folder": "Archive folder"
+                },
+                "data_description": {
+                    "archive_folder": "For example /media/birdbuddy"
+                }
+            }
+        },
+        "error": {
+            "not_absolute": "Use a full path that starts with /.",
+            "not_allowed": "Home Assistant may not write there. Use a folder under /media or one listed in allowlist_external_dirs."
+        }
     }
 }

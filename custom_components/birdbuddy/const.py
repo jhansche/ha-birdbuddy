@@ -10,6 +10,10 @@ DOMAIN = "birdbuddy"
 CONF_AUTH_METHOD = "auth_method"
 CONF_REFRESH_TOKEN = "refresh_token"
 CONF_USER_ID = "user_id"
+# Options: the folder that keeps every visit's photos, videos and species.
+# Blank turns the archive off.
+CONF_ARCHIVE_FOLDER = "archive_folder"
+DEFAULT_ARCHIVE_FOLDER = "/media/birdbuddy"
 AUTH_EMAIL = "email"
 AUTH_GOOGLE = "google"
 LOGGER = logging.getLogger(__package__)
@@ -51,3 +55,6 @@ SERVICE_SCHEMA_COLLECT_POSTCARD = vol.Schema(
         vol.Optional(ATTR_SHARE): cv.boolean,
     }
 )
+
+SERVICE_ARCHIVE_HISTORY = "archive_history"
+SERVICE_SCHEMA_ARCHIVE_HISTORY = vol.Schema({})
