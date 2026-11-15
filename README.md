@@ -148,7 +148,9 @@ whether or not you collect it:
 ```
 
 The JSON file holds the species, the confidence, the feeder and the visit's
-files. A folder
+files. Visits you open in the app before Home Assistant sees them, species
+sightings and mystery visitors are saved too, from the feed and from your
+Bird Buddy gallery, which is checked every 6 hours. A folder
 under `/media` shows up in the Media panel under **My media**. Leave the
 option blank to turn the archive off. To save what Bird Buddy already holds,
 run the `birdbuddy.archive_history` action once (see below).
@@ -255,8 +257,9 @@ it to get the update.
 
 ### `birdbuddy.archive_history`
 
-Saves every photo and video in your Bird Buddy collections, and every
-postcard still in the feed, to the archive folder. Anything already saved is
+Saves every photo and video in your Bird Buddy gallery and collections, the
+media in every feed item, and every postcard still in the feed, to the
+archive folder. Anything already saved is
 skipped, so it is safe to run again. It returns how many files were saved.
 It needs an **Archive folder** in the integration's options.
 

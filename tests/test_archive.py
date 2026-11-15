@@ -4,8 +4,8 @@ import json
 from pathlib import Path
 from unittest.mock import AsyncMock, MagicMock, patch
 
-from birdbuddy.exceptions import GraphqlError
-from birdbuddy.feed import FeedNode
+from birdbuddy.exceptions import GraphqlError, UnexpectedResponseError
+from birdbuddy.feed import Feed, FeedNode
 from birdbuddy.media import Collection, Media
 from birdbuddy.postcards import PostcardAnalysis
 from homeassistant.data_entry_flow import FlowResultType
@@ -25,7 +25,16 @@ from custom_components.birdbuddy.const import (
     DOMAIN,
     SERVICE_ARCHIVE_HISTORY,
 )
-from custom_components.birdbuddy.coordinator import BirdBuddyDataUpdateCoordinator
+from custom_components.birdbuddy.coordinator import (
+    GALLERY_SYNC_EVERY,
+    BirdBuddyDataUpdateCoordinator,
+)
+from custom_components.birdbuddy.gallery import (
+    MYSTERY_VISITOR,
+    async_feed_media,
+    async_gallery_pages,
+    feed_item_media,
+)
 
 _FUTURE = "Expires=4102444800"  # 2100-01-01
 _PAST = "Expires=946684800"  # 2000-01-01
@@ -255,7 +264,14 @@ async def test_archive_history_saves_collections_and_the_feed(hass, tmp_path):
     archive = coordinator.archive
     assert archive is not None
 
+    sync = AsyncMock(return_value=4)
     with (
+        patch.object(coordinator, "async_sync_gallery", sync),
+        patch(
+            "custom_components.birdbuddy.coordinator.async_feed_media",
+            AsyncMock(return_value=[(["Cardinal"], Media(_image("m3")))]),
+        ),
+        patch.object(archive, "async_save_items", AsyncMock(return_value=["d"])),
         patch.object(
             archive, "async_save_collection", AsyncMock(return_value=["a", "b"])
         ),
@@ -263,8 +279,9 @@ async def test_archive_history_saves_collections_and_the_feed(hass, tmp_path):
     ):
         counts = await coordinator.async_archive_history()
 
-    assert counts == {"collections": 2, "postcards": 1}
+    assert counts == {"gallery": 4, "collections": 2, "feed": 1, "postcards": 1}
     client.collection.assert_awaited_once_with("c1")
+    sync.assert_awaited_once_with(full=True)
 
 
 async def test_archive_history_needs_a_folder(hass):
@@ -555,3 +572,201 @@ async def test_a_damaged_index_is_set_aside(hass, tmp_path, media_urls):
 
     assert len(list(tmp_path.glob(f"{INDEX_FILE}.bad-*"))) == 1
     assert "m1" in json.loads((tmp_path / INDEX_FILE).read_text())
+
+
+def _owned(media: dict, species: list[str] | None = None, mystery: bool = False):
+    return {
+        "node": {
+            "id": f"cm-{media['id']}",
+            "isMysteryVisitor": mystery,
+            "species": [{"id": n, "name": n} for n in species or []],
+            "media": media,
+        }
+    }
+
+
+def _owned_page(edges: list[dict], cursor: str | None = None) -> dict:
+    return {
+        "me": {
+            "mediasOwned": {
+                "edges": edges,
+                "pageInfo": {"hasNextPage": cursor is not None, "endCursor": cursor},
+            }
+        }
+    }
+
+
+async def test_gallery_pages_follow_the_cursor():
+    """Every gallery page is read, with species and mystery visitors named."""
+    client = MagicMock()
+    client._make_request = AsyncMock(
+        side_effect=[
+            _owned_page([_owned(_image("m1"), ["Blue Jay"])], "c1"),
+            _owned_page([_owned(_image("m2"), mystery=True), {"node": {}}]),
+        ]
+    )
+
+    pages = [page async for page in async_gallery_pages(client)]
+
+    assert [[(n, m.id) for n, m in p] for p in pages] == [
+        [(["Blue Jay"], "m1")],
+        [([MYSTERY_VISITOR], "m2")],
+    ]
+    first, second = client._make_request.await_args_list
+    assert "after" not in first.kwargs["variables"]
+    assert second.kwargs["variables"]["after"] == "c1"
+
+
+async def test_a_gallery_page_without_media_edges_raises():
+    """A page that isn't shaped as expected is reported, not skipped."""
+    client = MagicMock()
+    client._make_request = AsyncMock(return_value={"me": {}})
+
+    with pytest.raises(UnexpectedResponseError):
+        [page async for page in async_gallery_pages(client)]
+
+
+def test_media_from_feed_items():
+    """Collected postcards, sightings and mystery visitors carry media."""
+    collected = FeedNode(
+        {
+            "__typename": "FeedItemCollectedPostcard",
+            "id": "f1",
+            "species": [{"id": "s1", "name": "Northern Cardinal"}],
+            "medias": [_image("m1"), _video("v1")],
+        }
+    )
+    sighting = FeedNode(
+        {
+            "__typename": "FeedItemSpeciesSighting",
+            "id": "f2",
+            "collection": {"species": {"id": "s2", "name": "Blue Jay"}},
+            "media": _image("m2"),
+        }
+    )
+    mystery = FeedNode(
+        {
+            "__typename": "FeedItemMysteryVisitorNotRecognized",
+            "id": "f3",
+            "media": _image("m3"),
+        }
+    )
+    postcard = FeedNode({"__typename": "FeedItemNewPostcard", "id": "f4"})
+
+    assert [(n, m.id) for n, m in feed_item_media(collected)] == [
+        (["Northern Cardinal"], "m1"),
+        (["Northern Cardinal"], "v1"),
+    ]
+    assert [(n, m.id) for n, m in feed_item_media(sighting)] == [(["Blue Jay"], "m2")]
+    assert [(n, m.id) for n, m in feed_item_media(mystery)] == [
+        ([MYSTERY_VISITOR], "m3")
+    ]
+    assert feed_item_media(postcard) == []
+
+
+async def test_feed_media_reads_every_feed_page():
+    """The backfill walks the whole feed, not only the newest page."""
+    sighting = {
+        "__typename": "FeedItemSpeciesSighting",
+        "id": "f2",
+        "collection": {"species": {"id": "s2", "name": "Blue Jay"}},
+        "media": _image("m2"),
+    }
+    client = MagicMock()
+    client.feed = AsyncMock(
+        side_effect=[
+            Feed(
+                {
+                    "edges": [{"node": sighting}],
+                    "pageInfo": {"hasNextPage": True, "endCursor": "c1"},
+                }
+            ),
+            Feed({"edges": [], "pageInfo": {"hasNextPage": False}}),
+        ]
+    )
+
+    items = await async_feed_media(client)
+
+    assert [(n, m.id) for n, m in items] == [(["Blue Jay"], "m2")]
+    assert client.feed.await_args_list[1].kwargs["after"] == "c1"
+
+
+async def test_saves_items_named_by_their_own_species(hass, tmp_path, aioclient_mock):
+    """Gallery items are filed by day and named after their species."""
+    other = f"https://example.invalid/f.jpg?{_FUTURE}"
+    aioclient_mock.get(_PHOTO, content=b"a", headers={"Content-Type": "image/jpeg"})
+    aioclient_mock.get(other, content=b"b", headers={"Content-Type": "image/jpeg"})
+    archive = PostcardArchive(hass, tmp_path)
+
+    written = await archive.async_save_items(
+        [
+            (["Blue Jay"], Media(_image("m1"))),
+            ([], Media(_image("m2", other, "2026-03-01T15:00:00.000Z"))),
+        ]
+    )
+
+    march_day, march_time = _local_stem("2026-03-01T15:00:00.000Z")
+    day, time = _local_stem()
+    assert written == [
+        f"{march_day}/{march_time} {UNKNOWN_VISITOR}.jpg",
+        f"{day}/{time} Blue Jay.jpg",
+    ]
+    assert await archive.async_known(["m1", "m2"])
+    assert not await archive.async_known(["m1", "m9"])
+    assert await archive.async_save_items([(["Blue Jay"], Media(_image("m1")))]) == []
+
+
+async def test_opened_postcards_in_the_feed_are_archived(hass, tmp_path, media_urls):
+    """A postcard opened in the app is saved from its feed item."""
+    coordinator = _coordinator(hass, tmp_path)
+    collected = FeedNode(
+        {
+            "__typename": "FeedItemCollectedPostcard",
+            "id": "f1",
+            "species": [{"id": "s1", "name": "Northern Cardinal"}],
+            "medias": [_image()],
+        }
+    )
+
+    await coordinator._process_feed([collected])
+
+    day, time = _local_stem()
+    assert (tmp_path / f"{day}/{time} Northern Cardinal.jpg").read_bytes() == b"jpeg"
+
+
+async def test_a_quick_gallery_sync_stops_at_a_saved_page(hass, tmp_path):
+    """A quick sync stops at the first fully saved page; a full one doesn't."""
+    coordinator = _coordinator(hass, tmp_path)
+    archive = coordinator.archive
+    assert archive is not None
+    pages = [[(["Blue Jay"], Media(_image("m1")))], [(["Robin"], Media(_image("m2")))]]
+
+    async def gallery(_client):
+        for page in pages:
+            yield page
+
+    with (
+        patch("custom_components.birdbuddy.coordinator.async_gallery_pages", gallery),
+        patch.object(archive, "async_known", AsyncMock(return_value=True)),
+        patch.object(archive, "async_save_items", AsyncMock(return_value=[])) as save,
+    ):
+        assert await coordinator.async_sync_gallery() == 0
+        assert save.await_count == 1
+        await coordinator.async_sync_gallery(full=True)
+        assert save.await_count == 3
+
+
+async def test_a_failed_gallery_check_waits_for_the_next_due_time(hass, tmp_path):
+    """A failing gallery check is logged and not retried every poll."""
+    coordinator = _coordinator(hass, tmp_path)
+    failing = AsyncMock(side_effect=GraphqlError({}))
+
+    with patch.object(coordinator, "async_sync_gallery", failing):
+        await coordinator._async_sync_gallery_if_due()
+        await coordinator._async_sync_gallery_if_due()
+    assert failing.await_count == 1
+
+    coordinator._gallery_synced = dt_util.utcnow() - GALLERY_SYNC_EVERY
+    with patch.object(coordinator, "async_sync_gallery", failing):
+        await coordinator._async_sync_gallery_if_due()
+    assert failing.await_count == 2

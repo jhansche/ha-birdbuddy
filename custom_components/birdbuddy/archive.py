@@ -450,11 +450,38 @@ class PostcardArchive:
         Returns:
             The newly written media files, relative to the archive folder.
         """
-        label = _species_label([collection.bird_name or ""])
+        names = [collection.bird_name or ""]
+        return await self.async_save_items([(names, media) for media in medias])
+
+    async def async_save_items(self, items: list[tuple[list[str], Media]]) -> list[str]:
+        """Save photos and videos that each carry their own species.
+
+        Each item is filed under the day it was taken and named after its
+        species. Items saved before are skipped.
+
+        Args:
+            items: The species names and the media of each item.
+
+        Returns:
+            The newly written media files, relative to the archive folder.
+        """
         written: list[str] = []
         async with self._lock:
             await self._async_flush()
-            for media in sorted(medias, key=lambda m: m.created_at):
+            for names, media in sorted(items, key=lambda i: i[1].created_at):
                 when = dt_util.as_local(media.created_at)
+                label = _species_label(names)
                 written += await self._async_save_media([media], label, when)
         return written
+
+    async def async_known(self, media_ids: list[str]) -> bool:
+        """Report whether every one of these media is saved already.
+
+        Args:
+            media_ids: The media ids.
+
+        Returns:
+            True when the index holds all of them.
+        """
+        index = await self._async_index()
+        return all(media_id in index for media_id in media_ids)
